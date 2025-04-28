@@ -1,0 +1,2 @@
+/usr/bin/ar qc libsolvers.a CMakeFiles/solvers.dir/src/solvers/base/Solver.cpp.o CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.o
+/usr/bin/ranlib libsolvers.a
