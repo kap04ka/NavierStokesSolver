@@ -30,7 +30,8 @@ void JacobiSolver::solve(Field2D<double>&       phi,
             for (std::size_t i = 1; i < nx-1; ++i) {
                 if (tag(i,j)==CellTag::SOLID) { pn(i,j)=0.0; continue; }
                 auto nb=[&](std::size_t ii,std::size_t jj){return tag(ii,jj)==CellTag::SOLID?phi(i,j):phi(ii,jj);} ;
-                pn(i,j)=coef*((nb(i+1,j)+nb(i-1,j))/dx2 + (nb(i,j+1)+nb(i,j-1))/dy2 - rhs(i,j));
+                pn(i,j)=coef*((nb(i+1,j)+nb(i-1,j))/dx2 
+                            + (nb(i,j+1)+nb(i,j-1))/dy2 - rhs(i,j));
                 err = std::max(err, std::fabs(pn(i,j)-phi(i,j)));
             }
         }
@@ -55,9 +56,6 @@ void SORSolver::solve(Field2D<double>&       phi,
 
     for (unsigned it = 0; it < maxIter; ++it) {
         double err = 0.0;
-#ifdef USE_OPENMP
-        #pragma omp parallel for reduction(max:err)
-#endif
         for (std::size_t j = 1; j < ny-1; ++j) {
             for (std::size_t i = 1; i < nx-1; ++i) {
                 if (tag(i,j)==CellTag::SOLID) continue;

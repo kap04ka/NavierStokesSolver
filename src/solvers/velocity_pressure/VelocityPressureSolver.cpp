@@ -46,7 +46,6 @@ void VelocityPressureSolver::apply_bc()
     for (std::size_t j = 0; j < ny; ++j) {
         u_(nx - 1, j) = u_(nx - 2, j);
         v_(nx - 1, j) = v_(nx - 2, j);
-        p_(nx - 1, j) = 0.0;
     }
     for (std::size_t j = 1; j < ny - 1; ++j)
         for (std::size_t i = 1; i < nx - 1; ++i) {
@@ -111,24 +110,76 @@ void VelocityPressureSolver::diffuse(Field2D<double>& f,double dt)
 //-------------------------------- project -------------------------------
 void VelocityPressureSolver::project(double dt)
 {
-    const double dx=geom_.mesh().dx(), dy=geom_.mesh().dy();
-    const std::size_t nx=geom_.mesh().nx(), ny=geom_.mesh().ny();
+    const std::size_t nx = geom_.mesh().nx();
+    const std::size_t ny = geom_.mesh().ny();
+    const double dx = geom_.mesh().dx();
+    const double dy = geom_.mesh().dy();
 
-    for(std::size_t j=1;j<ny-1;++j)
-        for(std::size_t i=1;i<nx-1;++i){
-            if(tag_(i,j)==CellTag::SOLID){ rhs_(i,j)=0; continue; }
+    // 1 Ри-чоу
+    
+    // 2. Вычисляем правую часть для уравнения Пуассона (rhs_)
+#ifdef USE_OPENMP
+    #pragma omp parallel for collapse(2)
+#endif
+    for (std::size_t j = 1; j < ny - 1; ++j) {
+        for (std::size_t i = 1; i < nx - 1; ++i) {
+            if (tag_(i, j) == CellTag::SOLID) {
+                rhs_(i, j) = 0.0;
+                continue;
+            }
             double div=(u_star_(i+1,j)-u_star_(i-1,j))/(2*dx) + (v_star_(i,j+1)-v_star_(i,j-1))/(2*dy);
             rhs_(i,j)=rho_*div/dt;
         }
+    }
 
+    // 3. Установка ГРАНИЧНЫХ УСЛОВИЙ для ДАВЛЕНИЯ ПЕРЕД решением Пуассона
+    // (Этот блок остается без изменений)
+#ifdef USE_OPENMP
+    #pragma omp parallel for
+#endif
+    for (std::size_t i = 0; i < nx; ++i) {
+        p_(i, 0)    = p_(i, 1);
+        p_(i, ny-1) = p_(i, ny-2);
+    }
+#ifdef USE_OPENMP
+    #pragma omp parallel for
+#endif
+     for (std::size_t j = 0; j < ny; ++j) {
+         if (tag_(1, j) != CellTag::SOLID) {
+             p_(0, j) = p_(1, j);
+         }
+          if (tag_(nx-1, j) != CellTag::SOLID && tag_(nx-2, j) != CellTag::SOLID ) {
+             p_(nx-1, j) = 0.0;
+         } else if (tag_(nx-1, j) != CellTag::SOLID) {
+             p_(nx-1, j) = p_(nx-2, j);
+         }
+    }
+
+    // 4. Решаем Пуассона
     poisson_.solve(p_, rhs_, geom_);
 
-    for(std::size_t j=1;j<ny-1;++j)
-        for(std::size_t i=1;i<nx-1;++i){
-            if(tag_(i,j)==CellTag::SOLID){ u_(i,j)=v_(i,j)=0; continue; }
-            u_(i,j)=u_star_(i,j)-dt/rho_*(p_(i+1,j)-p_(i-1,j))/(2*dx);
-            v_(i,j)=v_star_(i,j)-dt/rho_*(p_(i,j+1)-p_(i,j-1))/(2*dy);
+    // 5. Корректируем скорости
+#ifdef USE_OPENMP
+    #pragma omp parallel for collapse(2)
+#endif
+    for (std::size_t j = 1; j < ny - 1; ++j) {
+        for (std::size_t i = 1; i < nx - 1; ++i) {
+            if (tag_(i, j) == CellTag::SOLID) {
+                continue;
+            }
+
+             double p_ip1 = (tag_(i+1,j) == CellTag::SOLID) ? p_(i,j) : p_(i+1,j);
+             double p_im1 = (tag_(i-1,j) == CellTag::SOLID) ? p_(i,j) : p_(i-1,j);
+             double p_jp1 = (tag_(i,j+1) == CellTag::SOLID) ? p_(i,j) : p_(i,j+1);
+             double p_jm1 = (tag_(i,j-1) == CellTag::SOLID) ? p_(i,j) : p_(i,j-1);
+
+             double dpdx_center = (p_ip1 - p_im1) / (2.0 * dx);
+             double dpdy_center = (p_jp1 - p_jm1) / (2.0 * dy);
+
+            u_(i, j) = u_star_(i, j) - dt / rho_ * dpdx_center;
+            v_(i, j) = v_star_(i, j) - dt / rho_ * dpdy_center;
         }
+    }
 }
 
 //-------------------------------- main step -----------------------------

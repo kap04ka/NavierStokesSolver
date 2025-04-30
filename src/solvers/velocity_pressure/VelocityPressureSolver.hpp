@@ -29,10 +29,12 @@ private:
     void apply_bc();
     void advect  (Field2D<double>& f,const Field2D<double>& u,const Field2D<double>& v,double dt);
     void diffuse (Field2D<double>& f,double dt);
+    //void rhie_chow_face_flux(double dt);
+    //void calculate_face_fluxes();
     void project (double dt);
     double compute_cfl_dt(double safety) const;
 
-    Field2D<double>      u_, v_, p_, u_star_, v_star_, rhs_;
+    Field2D<double>      u_, v_, p_, u_star_, v_star_, rhs_, uf_, vf_;
     const Field2D<CellTag>& tag_;
 
     double rho_;   // плотность

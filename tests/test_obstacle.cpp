@@ -10,7 +10,7 @@ int main()
     cfd::Geometry geom(NX, NY, 1.0, 0.5);
     geom.add_rectangle(20, 10, 40, 20);
 
-    cfd::PoissonType ptype = cfd::PoissonType::Jacobi;
+    cfd::PoissonType ptype = cfd::PoissonType::SOR;
     double cfl = 0.1;
 
     cfd::VelocityPressureSolver solver(geom, 1000.0, 1e-3, ptype, cfl);
@@ -19,9 +19,9 @@ int main()
 
 
     const double dt = 0.001;
-    for (int n = 0; n < 3000; ++n) {
+    for (int n = 0; n < 3001; ++n) {
         solver.step(dt);
-        if (n % 1000 == 0) {
+        if (n % 500 == 0) {
             std::cout<<"Pressure drop Δp = "<<solver.p()(1,NY/2)-solver.p()(NX-2,NY/2)<< std::endl;
             std::cout << "near obstacle u = " << solver.u()(NX / 2, NY - 5) << std::endl;
             std::cout << "near left u = " << solver.u()(5, NY / 2) << std::endl;
