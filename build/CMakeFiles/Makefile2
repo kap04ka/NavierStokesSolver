@@ -67,6 +67,7 @@ all: CMakeFiles/core.dir/all
 all: CMakeFiles/math.dir/all
 all: CMakeFiles/solvers.dir/all
 all: CMakeFiles/test_obstacle.dir/all
+all: CMakeFiles/cfd_visualizer.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -78,6 +79,7 @@ clean: CMakeFiles/core.dir/clean
 clean: CMakeFiles/math.dir/clean
 clean: CMakeFiles/solvers.dir/clean
 clean: CMakeFiles/test_obstacle.dir/clean
+clean: CMakeFiles/cfd_visualizer.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -87,7 +89,7 @@ clean: CMakeFiles/test_obstacle.dir/clean
 CMakeFiles/core.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/core.dir/build.make CMakeFiles/core.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/core.dir/build.make CMakeFiles/core.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/kap04ka/NSSolver2/build/CMakeFiles --progress-num=1,2 "Built target core"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/kap04ka/NSSolver2/build/CMakeFiles --progress-num=10,11 "Built target core"
 .PHONY : CMakeFiles/core.dir/all
 
 # Build rule for subdir invocation for target.
@@ -113,7 +115,7 @@ CMakeFiles/core.dir/clean:
 CMakeFiles/math.dir/all: CMakeFiles/core.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/math.dir/build.make CMakeFiles/math.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/math.dir/build.make CMakeFiles/math.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/kap04ka/NSSolver2/build/CMakeFiles --progress-num=3,4 "Built target math"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/kap04ka/NSSolver2/build/CMakeFiles --progress-num=12,13 "Built target math"
 .PHONY : CMakeFiles/math.dir/all
 
 # Build rule for subdir invocation for target.
@@ -136,11 +138,11 @@ CMakeFiles/math.dir/clean:
 # Target rules for target CMakeFiles/solvers.dir
 
 # All Build rule for target.
-CMakeFiles/solvers.dir/all: CMakeFiles/math.dir/all
 CMakeFiles/solvers.dir/all: CMakeFiles/core.dir/all
+CMakeFiles/solvers.dir/all: CMakeFiles/math.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/solvers.dir/build.make CMakeFiles/solvers.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/solvers.dir/build.make CMakeFiles/solvers.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/kap04ka/NSSolver2/build/CMakeFiles --progress-num=5,6,7 "Built target solvers"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/kap04ka/NSSolver2/build/CMakeFiles --progress-num=14,15,16 "Built target solvers"
 .PHONY : CMakeFiles/solvers.dir/all
 
 # Build rule for subdir invocation for target.
@@ -163,12 +165,12 @@ CMakeFiles/solvers.dir/clean:
 # Target rules for target CMakeFiles/test_obstacle.dir
 
 # All Build rule for target.
-CMakeFiles/test_obstacle.dir/all: CMakeFiles/math.dir/all
 CMakeFiles/test_obstacle.dir/all: CMakeFiles/core.dir/all
+CMakeFiles/test_obstacle.dir/all: CMakeFiles/math.dir/all
 CMakeFiles/test_obstacle.dir/all: CMakeFiles/solvers.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_obstacle.dir/build.make CMakeFiles/test_obstacle.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_obstacle.dir/build.make CMakeFiles/test_obstacle.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/kap04ka/NSSolver2/build/CMakeFiles --progress-num=8,9 "Built target test_obstacle"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/kap04ka/NSSolver2/build/CMakeFiles --progress-num=17,18 "Built target test_obstacle"
 .PHONY : CMakeFiles/test_obstacle.dir/all
 
 # Build rule for subdir invocation for target.
@@ -186,6 +188,34 @@ test_obstacle: CMakeFiles/test_obstacle.dir/rule
 CMakeFiles/test_obstacle.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_obstacle.dir/build.make CMakeFiles/test_obstacle.dir/clean
 .PHONY : CMakeFiles/test_obstacle.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/cfd_visualizer.dir
+
+# All Build rule for target.
+CMakeFiles/cfd_visualizer.dir/all: CMakeFiles/core.dir/all
+CMakeFiles/cfd_visualizer.dir/all: CMakeFiles/math.dir/all
+CMakeFiles/cfd_visualizer.dir/all: CMakeFiles/solvers.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/kap04ka/NSSolver2/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9 "Built target cfd_visualizer"
+.PHONY : CMakeFiles/cfd_visualizer.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/cfd_visualizer.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kap04ka/NSSolver2/build/CMakeFiles 16
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/cfd_visualizer.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kap04ka/NSSolver2/build/CMakeFiles 0
+.PHONY : CMakeFiles/cfd_visualizer.dir/rule
+
+# Convenience name for target.
+cfd_visualizer: CMakeFiles/cfd_visualizer.dir/rule
+.PHONY : cfd_visualizer
+
+# clean rule for target.
+CMakeFiles/cfd_visualizer.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/clean
+.PHONY : CMakeFiles/cfd_visualizer.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

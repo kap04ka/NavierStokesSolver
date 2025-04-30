@@ -168,6 +168,163 @@ test_obstacle/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_obstacle.dir/build.make CMakeFiles/test_obstacle.dir/build
 .PHONY : test_obstacle/fast
 
+#=============================================================================
+# Target rules for targets named cfd_visualizer
+
+# Build rule for target.
+cfd_visualizer: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 cfd_visualizer
+.PHONY : cfd_visualizer
+
+# fast build rule for target.
+cfd_visualizer/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/build
+.PHONY : cfd_visualizer/fast
+
+external/imgui/backends/imgui_impl_glfw.o: external/imgui/backends/imgui_impl_glfw.cpp.o
+.PHONY : external/imgui/backends/imgui_impl_glfw.o
+
+# target to build an object file
+external/imgui/backends/imgui_impl_glfw.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/backends/imgui_impl_glfw.cpp.o
+.PHONY : external/imgui/backends/imgui_impl_glfw.cpp.o
+
+external/imgui/backends/imgui_impl_glfw.i: external/imgui/backends/imgui_impl_glfw.cpp.i
+.PHONY : external/imgui/backends/imgui_impl_glfw.i
+
+# target to preprocess a source file
+external/imgui/backends/imgui_impl_glfw.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/backends/imgui_impl_glfw.cpp.i
+.PHONY : external/imgui/backends/imgui_impl_glfw.cpp.i
+
+external/imgui/backends/imgui_impl_glfw.s: external/imgui/backends/imgui_impl_glfw.cpp.s
+.PHONY : external/imgui/backends/imgui_impl_glfw.s
+
+# target to generate assembly for a file
+external/imgui/backends/imgui_impl_glfw.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/backends/imgui_impl_glfw.cpp.s
+.PHONY : external/imgui/backends/imgui_impl_glfw.cpp.s
+
+external/imgui/backends/imgui_impl_opengl3.o: external/imgui/backends/imgui_impl_opengl3.cpp.o
+.PHONY : external/imgui/backends/imgui_impl_opengl3.o
+
+# target to build an object file
+external/imgui/backends/imgui_impl_opengl3.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/backends/imgui_impl_opengl3.cpp.o
+.PHONY : external/imgui/backends/imgui_impl_opengl3.cpp.o
+
+external/imgui/backends/imgui_impl_opengl3.i: external/imgui/backends/imgui_impl_opengl3.cpp.i
+.PHONY : external/imgui/backends/imgui_impl_opengl3.i
+
+# target to preprocess a source file
+external/imgui/backends/imgui_impl_opengl3.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/backends/imgui_impl_opengl3.cpp.i
+.PHONY : external/imgui/backends/imgui_impl_opengl3.cpp.i
+
+external/imgui/backends/imgui_impl_opengl3.s: external/imgui/backends/imgui_impl_opengl3.cpp.s
+.PHONY : external/imgui/backends/imgui_impl_opengl3.s
+
+# target to generate assembly for a file
+external/imgui/backends/imgui_impl_opengl3.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/backends/imgui_impl_opengl3.cpp.s
+.PHONY : external/imgui/backends/imgui_impl_opengl3.cpp.s
+
+external/imgui/imgui.o: external/imgui/imgui.cpp.o
+.PHONY : external/imgui/imgui.o
+
+# target to build an object file
+external/imgui/imgui.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/imgui.cpp.o
+.PHONY : external/imgui/imgui.cpp.o
+
+external/imgui/imgui.i: external/imgui/imgui.cpp.i
+.PHONY : external/imgui/imgui.i
+
+# target to preprocess a source file
+external/imgui/imgui.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/imgui.cpp.i
+.PHONY : external/imgui/imgui.cpp.i
+
+external/imgui/imgui.s: external/imgui/imgui.cpp.s
+.PHONY : external/imgui/imgui.s
+
+# target to generate assembly for a file
+external/imgui/imgui.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/imgui.cpp.s
+.PHONY : external/imgui/imgui.cpp.s
+
+external/imgui/imgui_draw.o: external/imgui/imgui_draw.cpp.o
+.PHONY : external/imgui/imgui_draw.o
+
+# target to build an object file
+external/imgui/imgui_draw.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/imgui_draw.cpp.o
+.PHONY : external/imgui/imgui_draw.cpp.o
+
+external/imgui/imgui_draw.i: external/imgui/imgui_draw.cpp.i
+.PHONY : external/imgui/imgui_draw.i
+
+# target to preprocess a source file
+external/imgui/imgui_draw.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/imgui_draw.cpp.i
+.PHONY : external/imgui/imgui_draw.cpp.i
+
+external/imgui/imgui_draw.s: external/imgui/imgui_draw.cpp.s
+.PHONY : external/imgui/imgui_draw.s
+
+# target to generate assembly for a file
+external/imgui/imgui_draw.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/imgui_draw.cpp.s
+.PHONY : external/imgui/imgui_draw.cpp.s
+
+external/imgui/imgui_tables.o: external/imgui/imgui_tables.cpp.o
+.PHONY : external/imgui/imgui_tables.o
+
+# target to build an object file
+external/imgui/imgui_tables.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/imgui_tables.cpp.o
+.PHONY : external/imgui/imgui_tables.cpp.o
+
+external/imgui/imgui_tables.i: external/imgui/imgui_tables.cpp.i
+.PHONY : external/imgui/imgui_tables.i
+
+# target to preprocess a source file
+external/imgui/imgui_tables.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/imgui_tables.cpp.i
+.PHONY : external/imgui/imgui_tables.cpp.i
+
+external/imgui/imgui_tables.s: external/imgui/imgui_tables.cpp.s
+.PHONY : external/imgui/imgui_tables.s
+
+# target to generate assembly for a file
+external/imgui/imgui_tables.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/imgui_tables.cpp.s
+.PHONY : external/imgui/imgui_tables.cpp.s
+
+external/imgui/imgui_widgets.o: external/imgui/imgui_widgets.cpp.o
+.PHONY : external/imgui/imgui_widgets.o
+
+# target to build an object file
+external/imgui/imgui_widgets.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/imgui_widgets.cpp.o
+.PHONY : external/imgui/imgui_widgets.cpp.o
+
+external/imgui/imgui_widgets.i: external/imgui/imgui_widgets.cpp.i
+.PHONY : external/imgui/imgui_widgets.i
+
+# target to preprocess a source file
+external/imgui/imgui_widgets.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/imgui_widgets.cpp.i
+.PHONY : external/imgui/imgui_widgets.cpp.i
+
+external/imgui/imgui_widgets.s: external/imgui/imgui_widgets.cpp.s
+.PHONY : external/imgui/imgui_widgets.s
+
+# target to generate assembly for a file
+external/imgui/imgui_widgets.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/external/imgui/imgui_widgets.cpp.s
+.PHONY : external/imgui/imgui_widgets.cpp.s
+
 src/core/Geometry.o: src/core/Geometry.cpp.o
 .PHONY : src/core/Geometry.o
 
@@ -264,6 +421,54 @@ src/solvers/velocity_pressure/VelocityPressureSolver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/solvers.dir/build.make CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.s
 .PHONY : src/solvers/velocity_pressure/VelocityPressureSolver.cpp.s
 
+src/visualizer/FlowVisualizer.o: src/visualizer/FlowVisualizer.cpp.o
+.PHONY : src/visualizer/FlowVisualizer.o
+
+# target to build an object file
+src/visualizer/FlowVisualizer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/src/visualizer/FlowVisualizer.cpp.o
+.PHONY : src/visualizer/FlowVisualizer.cpp.o
+
+src/visualizer/FlowVisualizer.i: src/visualizer/FlowVisualizer.cpp.i
+.PHONY : src/visualizer/FlowVisualizer.i
+
+# target to preprocess a source file
+src/visualizer/FlowVisualizer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/src/visualizer/FlowVisualizer.cpp.i
+.PHONY : src/visualizer/FlowVisualizer.cpp.i
+
+src/visualizer/FlowVisualizer.s: src/visualizer/FlowVisualizer.cpp.s
+.PHONY : src/visualizer/FlowVisualizer.s
+
+# target to generate assembly for a file
+src/visualizer/FlowVisualizer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/src/visualizer/FlowVisualizer.cpp.s
+.PHONY : src/visualizer/FlowVisualizer.cpp.s
+
+src/visualizer/main.o: src/visualizer/main.cpp.o
+.PHONY : src/visualizer/main.o
+
+# target to build an object file
+src/visualizer/main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/src/visualizer/main.cpp.o
+.PHONY : src/visualizer/main.cpp.o
+
+src/visualizer/main.i: src/visualizer/main.cpp.i
+.PHONY : src/visualizer/main.i
+
+# target to preprocess a source file
+src/visualizer/main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/src/visualizer/main.cpp.i
+.PHONY : src/visualizer/main.cpp.i
+
+src/visualizer/main.s: src/visualizer/main.cpp.s
+.PHONY : src/visualizer/main.s
+
+# target to generate assembly for a file
+src/visualizer/main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cfd_visualizer.dir/build.make CMakeFiles/cfd_visualizer.dir/src/visualizer/main.cpp.s
+.PHONY : src/visualizer/main.cpp.s
+
 tests/test_obstacle.o: tests/test_obstacle.cpp.o
 .PHONY : tests/test_obstacle.o
 
@@ -296,10 +501,29 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... cfd_visualizer"
 	@echo "... core"
 	@echo "... math"
 	@echo "... solvers"
 	@echo "... test_obstacle"
+	@echo "... external/imgui/backends/imgui_impl_glfw.o"
+	@echo "... external/imgui/backends/imgui_impl_glfw.i"
+	@echo "... external/imgui/backends/imgui_impl_glfw.s"
+	@echo "... external/imgui/backends/imgui_impl_opengl3.o"
+	@echo "... external/imgui/backends/imgui_impl_opengl3.i"
+	@echo "... external/imgui/backends/imgui_impl_opengl3.s"
+	@echo "... external/imgui/imgui.o"
+	@echo "... external/imgui/imgui.i"
+	@echo "... external/imgui/imgui.s"
+	@echo "... external/imgui/imgui_draw.o"
+	@echo "... external/imgui/imgui_draw.i"
+	@echo "... external/imgui/imgui_draw.s"
+	@echo "... external/imgui/imgui_tables.o"
+	@echo "... external/imgui/imgui_tables.i"
+	@echo "... external/imgui/imgui_tables.s"
+	@echo "... external/imgui/imgui_widgets.o"
+	@echo "... external/imgui/imgui_widgets.i"
+	@echo "... external/imgui/imgui_widgets.s"
 	@echo "... src/core/Geometry.o"
 	@echo "... src/core/Geometry.i"
 	@echo "... src/core/Geometry.s"
@@ -312,6 +536,12 @@ help:
 	@echo "... src/solvers/velocity_pressure/VelocityPressureSolver.o"
 	@echo "... src/solvers/velocity_pressure/VelocityPressureSolver.i"
 	@echo "... src/solvers/velocity_pressure/VelocityPressureSolver.s"
+	@echo "... src/visualizer/FlowVisualizer.o"
+	@echo "... src/visualizer/FlowVisualizer.i"
+	@echo "... src/visualizer/FlowVisualizer.s"
+	@echo "... src/visualizer/main.o"
+	@echo "... src/visualizer/main.i"
+	@echo "... src/visualizer/main.s"
 	@echo "... tests/test_obstacle.o"
 	@echo "... tests/test_obstacle.i"
 	@echo "... tests/test_obstacle.s"
