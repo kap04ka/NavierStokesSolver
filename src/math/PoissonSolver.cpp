@@ -1,5 +1,6 @@
 #include "math/PoissonSolver.hpp"
 #include <cmath>
+#include <limits>
 #ifdef USE_OPENMP
  #include <omp.h>
 #endif
@@ -7,11 +8,12 @@
 namespace cfd {
 
 //========================= Jacobi =========================================
-void JacobiSolver::solve(Field2D<double>&       phi,
-                         const Field2D<double>& rhs,
-                         const Geometry&        geom,
-                         unsigned               maxIter,
-                         double                 tol)
+[[nodiscard]] ConvergenceInfo JacobiSolver::solve(
+    Field2D<double>&       phi,
+    const Field2D<double>& rhs,
+    const Geometry&        geom,
+    unsigned               maxIter,
+    double                 tol)
 {
     const auto& mesh = geom.mesh();
     const auto& tag  = geom.tags();
@@ -21,10 +23,14 @@ void JacobiSolver::solve(Field2D<double>&       phi,
     const double coef = 1.0 /(2.0*(1.0/dx2 + 1.0/dy2));
 
     Field2D<double> pn(nx, ny, 0.0);
+    ConvergenceInfo info;
+    info.residual = std::numeric_limits<double>::max();
+
     for (unsigned it = 0; it < maxIter; ++it) {
-        double err = 0.0;
+        double current_max_err = 0.0;
+
 #ifdef USE_OPENMP
-        #pragma omp parallel for reduction(max:err)
+        #pragma omp parallel for reduction(max:current_max_err)
 #endif
         for (std::size_t j = 1; j < ny-1; ++j) {
             for (std::size_t i = 1; i < nx-1; ++i) {
@@ -32,20 +38,24 @@ void JacobiSolver::solve(Field2D<double>&       phi,
                 auto nb=[&](std::size_t ii,std::size_t jj){return tag(ii,jj)==CellTag::SOLID?phi(i,j):phi(ii,jj);} ;
                 pn(i,j)=coef*((nb(i+1,j)+nb(i-1,j))/dx2 
                             + (nb(i,j+1)+nb(i,j-1))/dy2 - rhs(i,j));
-                err = std::max(err, std::fabs(pn(i,j)-phi(i,j)));
+                            current_max_err = std::max(current_max_err, std::fabs(pn(i,j)-phi(i,j)));
             }
         }
         phi.swap(pn);
-        if (err < tol) break;
+        info.residual = current_max_err;
+        info.iterations = it + 1;
+        if (info.residual < tol) break;
     }
+    return info;
 }
 
 //========================= ω‑SOR ==========================================
-void SORSolver::solve(Field2D<double>&       phi,
-                      const Field2D<double>& rhs,
-                      const Geometry&        geom,
-                      unsigned               maxIter,
-                      double                 tol)
+[[nodiscard]] ConvergenceInfo SORSolver::solve(
+    Field2D<double>&       phi,
+    const Field2D<double>& rhs,
+    const Geometry&        geom,
+    unsigned               maxIter,
+    double                 tol)
 {
     const auto& mesh = geom.mesh();
     const auto& tag  = geom.tags();
@@ -54,8 +64,11 @@ void SORSolver::solve(Field2D<double>&       phi,
     double dy2 = mesh.dy()*mesh.dy();
     const double coef = 1.0 /(2.0*(1.0/dx2 + 1.0/dy2));
 
+    ConvergenceInfo info;
+    info.residual = std::numeric_limits<double>::max();
+
     for (unsigned it = 0; it < maxIter; ++it) {
-        double err = 0.0;
+        double current_max_err = 0.0;
         for (std::size_t j = 1; j < ny-1; ++j) {
             for (std::size_t i = 1; i < nx-1; ++i) {
                 if (tag(i,j)==CellTag::SOLID) continue;
@@ -63,24 +76,28 @@ void SORSolver::solve(Field2D<double>&       phi,
                 double p_new = coef*((nb(i+1,j)+nb(i-1,j))/dx2 + (nb(i,j+1)+nb(i,j-1))/dy2 - rhs(i,j));
                 double diff  = p_new - phi(i,j);
                 phi(i,j) += omega_ * diff;
-                err = std::max(err, std::fabs(diff));
+                current_max_err = std::max(current_max_err, std::fabs(diff));
             }
         }
-        if (err < tol) break;
+        info.residual = current_max_err;
+        info.iterations = it + 1;
+        if (info.residual < tol) break;
     }
+    return info;
 }
 
 //========================= Wrapper ========================================
-void PoissonSolverDyn::solve(Field2D<double>&       phi,
-                             const Field2D<double>& rhs,
-                             const Geometry&        geom,
-                             unsigned               maxIter,
-                             double                 tol)
+[[nodiscard]] ConvergenceInfo PoissonSolverDyn::solve(
+    Field2D<double>&       phi,
+    const Field2D<double>& rhs,
+    const Geometry&        geom,
+    unsigned               maxIter,
+    double                 tol)
 {
     if (type_ == PoissonType::Jacobi)
-        jac_.solve(phi, rhs, geom, maxIter, tol);
+        return jac_.solve(phi, rhs, geom, maxIter, tol);
     else
-        sor_.solve(phi, rhs, geom, maxIter, tol);
+        return sor_.solve(phi, rhs, geom, maxIter, tol);
 }
 
 } // namespace cfd

@@ -6,14 +6,24 @@
 
 namespace cfd {
 
+struct SolverMonitorInfo {
+    unsigned pressureIterations = 0;
+    double   pressureResidual = 0.0;
+    double   actualDt = 0.0;
+    // Сюда можно будет добавить другие параметры для мониторинга позже
+};
+
 class VelocityPressureSolver : public Solver {
 public:
-    VelocityPressureSolver(const Geometry& geom,
-                           double rho,
-                           double nu,
-                           PoissonType ptype = PoissonType::Jacobi,
-                           double cfl = 0.4,
-                           double omega = 1.7);
+    VelocityPressureSolver(
+        const Geometry& geom,
+        double rho,
+        double nu,
+        PoissonType ptype = PoissonType::Jacobi,
+        double cfl = 0.4,
+        double omega = 1.7,
+        unsigned max_p_iter = 400,
+        double p_tol = 1e-5);
 
     /** шаг интегрирования; фактический dt ограничивается условием CFL */
     void step(double dt_user) override;
@@ -24,22 +34,31 @@ public:
     [[nodiscard]] const Field2D<double>& v() const noexcept { return v_; }
     [[nodiscard]] const Field2D<double>& p() const noexcept { return p_; }
 
+    // Метод для получения информации о сходимости 
+    [[nodiscard]] SolverMonitorInfo getMonitorInfo() const noexcept { return last_monitor_info_; }
+
 private:
     // вспомогательные процедуры
     void apply_bc();
     void advect  (Field2D<double>& f,const Field2D<double>& u,const Field2D<double>& v,double dt);
     void diffuse (Field2D<double>& f,double dt);
     //void rhie_chow_face_flux(double dt);
-    //void calculate_face_fluxes();
     void project (double dt);
     double compute_cfl_dt(double safety) const;
+    double compute_diff_dt() const; // Добавляем для диффузионного лимита
 
     Field2D<double>      u_, v_, p_, u_star_, v_star_, rhs_, uf_, vf_;
     const Field2D<CellTag>& tag_;
 
     double rho_;   // плотность
     double cfl_;   // коэффициент безопасности CFL
+    unsigned max_pressure_iter_; // Макс. итераций для Пуассона
+    double pressure_tol_;      // Точность для Пуассона
+
     PoissonSolverDyn poisson_;
+
+    // Структура мониторинга
+    SolverMonitorInfo last_monitor_info_;
 };
 
 } // namespace cfd

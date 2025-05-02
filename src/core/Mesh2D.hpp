@@ -8,7 +8,7 @@ class Mesh2D {
 public:
     Mesh2D() = default;
     Mesh2D(std::size_t nx, std::size_t ny, double Lx, double Ly)
-        : nx_(nx), ny_(ny), dx_(Lx / (nx - 1)), dy_(Ly / (ny - 1)) {}
+        : nx_(nx), ny_(ny), dx_(Lx / nx), dy_(Ly / ny) {}
 
     [[nodiscard]] std::size_t nx() const noexcept { return nx_; }
     [[nodiscard]] std::size_t ny() const noexcept { return ny_; }
