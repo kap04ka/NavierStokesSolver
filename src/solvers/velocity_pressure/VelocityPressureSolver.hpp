@@ -19,6 +19,7 @@ public:
         const Geometry& geom,
         double rho,
         double nu,
+        TurbulenceModelType turb_type,
         PoissonType ptype = PoissonType::Jacobi,
         double cfl = 0.4,
         double omega = 1.7,
@@ -42,15 +43,15 @@ private:
     void apply_bc();
     void advect  (Field2D<double>& f,const Field2D<double>& u,const Field2D<double>& v,double dt);
     void diffuse (Field2D<double>& f,double dt);
-    //void rhie_chow_face_flux(double dt);
     void project (double dt);
     double compute_cfl_dt(double safety) const;
     double compute_diff_dt() const; // Добавляем для диффузионного лимита
+    void calculatePoissonRHS_RhieChow(Field2D<double>& rhs, double dt);
 
-    Field2D<double>      u_, v_, p_, u_star_, v_star_, rhs_, uf_, vf_;
+    Field2D<double>      u_, v_, p_, u_star_, v_star_, rhs_;
     const Field2D<CellTag>& tag_;
 
-    double rho_;   // плотность
+    // double rho_;
     double cfl_;   // коэффициент безопасности CFL
     unsigned max_pressure_iter_; // Макс. итераций для Пуассона
     double pressure_tol_;      // Точность для Пуассона

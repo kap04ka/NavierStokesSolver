@@ -97,19 +97,51 @@ CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/kap04ka/NSSolver2/src/solvers/velocity_pressure/VelocityPressureSolver.cpp -o CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.s
 
+CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.o: CMakeFiles/solvers.dir/flags.make
+CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.o: /home/kap04ka/NSSolver2/src/turbulence/base/TurbulenceModel.cpp
+CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.o: CMakeFiles/solvers.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/kap04ka/NSSolver2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.o -MF CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.o.d -o CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.o -c /home/kap04ka/NSSolver2/src/turbulence/base/TurbulenceModel.cpp
+
+CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/kap04ka/NSSolver2/src/turbulence/base/TurbulenceModel.cpp > CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.i
+
+CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/kap04ka/NSSolver2/src/turbulence/base/TurbulenceModel.cpp -o CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.s
+
+CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.o: CMakeFiles/solvers.dir/flags.make
+CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.o: /home/kap04ka/NSSolver2/src/turbulence/k_epsilon/KEpsilonModel.cpp
+CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.o: CMakeFiles/solvers.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/kap04ka/NSSolver2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.o -MF CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.o.d -o CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.o -c /home/kap04ka/NSSolver2/src/turbulence/k_epsilon/KEpsilonModel.cpp
+
+CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/kap04ka/NSSolver2/src/turbulence/k_epsilon/KEpsilonModel.cpp > CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.i
+
+CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/kap04ka/NSSolver2/src/turbulence/k_epsilon/KEpsilonModel.cpp -o CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.s
+
 # Object files for target solvers
 solvers_OBJECTS = \
 "CMakeFiles/solvers.dir/src/solvers/base/Solver.cpp.o" \
-"CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.o"
+"CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.o" \
+"CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.o" \
+"CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.o"
 
 # External object files for target solvers
 solvers_EXTERNAL_OBJECTS =
 
 libsolvers.a: CMakeFiles/solvers.dir/src/solvers/base/Solver.cpp.o
 libsolvers.a: CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.o
+libsolvers.a: CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.o
+libsolvers.a: CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.o
 libsolvers.a: CMakeFiles/solvers.dir/build.make
 libsolvers.a: CMakeFiles/solvers.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/kap04ka/NSSolver2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX static library libsolvers.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/kap04ka/NSSolver2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX static library libsolvers.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/solvers.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/solvers.dir/link.txt --verbose=$(VERBOSE)
 

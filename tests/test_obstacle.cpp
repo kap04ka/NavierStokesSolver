@@ -11,9 +11,10 @@ int main()
     geom.add_rectangle(20, 10, 40, 20);
 
     cfd::PoissonType ptype = cfd::PoissonType::SOR;
+    
     double cfl = 0.1;
 
-    cfd::VelocityPressureSolver solver(geom, 1000.0, 1e-3, ptype, cfl);
+    cfd::VelocityPressureSolver solver(geom, 1000.0, 1e-3, static_cast<cfd::TurbulenceModelType>(cfd::TurbulenceModelType::None), ptype, cfl);
     solver.set_inlet_parabola(1.0);
     geom.export_tags_csv("mask_new.csv");
 

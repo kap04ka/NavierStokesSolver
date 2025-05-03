@@ -199,7 +199,7 @@ void FlowVisualizer::drawVelocityField() {
             double v = v_(i, j);
             double mag = std::hypot(u, v);
 
-            if (mag < 1e-6) continue; // Не рисуем слишком маленькие вектора
+            if (mag < 1e-5) continue; // Не рисуем слишком маленькие вектора
 
             double scale = arrowScale_ * (mag / maxVelMag); // Масштабируем по относительной величине
             // Альтернатива: использовать фиксированный масштаб arrowScale_
@@ -247,7 +247,7 @@ void FlowVisualizer::drawPressureField() {
     double pressureDiffInv = 1.0 / (maxPressure_ - minPressure_); // Обратный диапазон для нормализации
 
     glBegin(GL_QUADS);
-    for (std::size_t j = 0; j < geom_.mesh().ny(); ++j) {
+    for (std::size_t j = 1; j < geom_.mesh().ny() - 1; ++j) {
         for (std::size_t i = 0; i < geom_.mesh().nx(); ++i) {
             if (tag_(i, j) == cfd::CellTag::SOLID) continue; // Пропускаем твердые тела
 

@@ -421,6 +421,54 @@ src/solvers/velocity_pressure/VelocityPressureSolver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/solvers.dir/build.make CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.s
 .PHONY : src/solvers/velocity_pressure/VelocityPressureSolver.cpp.s
 
+src/turbulence/base/TurbulenceModel.o: src/turbulence/base/TurbulenceModel.cpp.o
+.PHONY : src/turbulence/base/TurbulenceModel.o
+
+# target to build an object file
+src/turbulence/base/TurbulenceModel.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/solvers.dir/build.make CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.o
+.PHONY : src/turbulence/base/TurbulenceModel.cpp.o
+
+src/turbulence/base/TurbulenceModel.i: src/turbulence/base/TurbulenceModel.cpp.i
+.PHONY : src/turbulence/base/TurbulenceModel.i
+
+# target to preprocess a source file
+src/turbulence/base/TurbulenceModel.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/solvers.dir/build.make CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.i
+.PHONY : src/turbulence/base/TurbulenceModel.cpp.i
+
+src/turbulence/base/TurbulenceModel.s: src/turbulence/base/TurbulenceModel.cpp.s
+.PHONY : src/turbulence/base/TurbulenceModel.s
+
+# target to generate assembly for a file
+src/turbulence/base/TurbulenceModel.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/solvers.dir/build.make CMakeFiles/solvers.dir/src/turbulence/base/TurbulenceModel.cpp.s
+.PHONY : src/turbulence/base/TurbulenceModel.cpp.s
+
+src/turbulence/k_epsilon/KEpsilonModel.o: src/turbulence/k_epsilon/KEpsilonModel.cpp.o
+.PHONY : src/turbulence/k_epsilon/KEpsilonModel.o
+
+# target to build an object file
+src/turbulence/k_epsilon/KEpsilonModel.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/solvers.dir/build.make CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.o
+.PHONY : src/turbulence/k_epsilon/KEpsilonModel.cpp.o
+
+src/turbulence/k_epsilon/KEpsilonModel.i: src/turbulence/k_epsilon/KEpsilonModel.cpp.i
+.PHONY : src/turbulence/k_epsilon/KEpsilonModel.i
+
+# target to preprocess a source file
+src/turbulence/k_epsilon/KEpsilonModel.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/solvers.dir/build.make CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.i
+.PHONY : src/turbulence/k_epsilon/KEpsilonModel.cpp.i
+
+src/turbulence/k_epsilon/KEpsilonModel.s: src/turbulence/k_epsilon/KEpsilonModel.cpp.s
+.PHONY : src/turbulence/k_epsilon/KEpsilonModel.s
+
+# target to generate assembly for a file
+src/turbulence/k_epsilon/KEpsilonModel.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/solvers.dir/build.make CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.s
+.PHONY : src/turbulence/k_epsilon/KEpsilonModel.cpp.s
+
 src/visualizer/FlowVisualizer.o: src/visualizer/FlowVisualizer.cpp.o
 .PHONY : src/visualizer/FlowVisualizer.o
 
@@ -536,6 +584,12 @@ help:
 	@echo "... src/solvers/velocity_pressure/VelocityPressureSolver.o"
 	@echo "... src/solvers/velocity_pressure/VelocityPressureSolver.i"
 	@echo "... src/solvers/velocity_pressure/VelocityPressureSolver.s"
+	@echo "... src/turbulence/base/TurbulenceModel.o"
+	@echo "... src/turbulence/base/TurbulenceModel.i"
+	@echo "... src/turbulence/base/TurbulenceModel.s"
+	@echo "... src/turbulence/k_epsilon/KEpsilonModel.o"
+	@echo "... src/turbulence/k_epsilon/KEpsilonModel.i"
+	@echo "... src/turbulence/k_epsilon/KEpsilonModel.s"
 	@echo "... src/visualizer/FlowVisualizer.o"
 	@echo "... src/visualizer/FlowVisualizer.i"
 	@echo "... src/visualizer/FlowVisualizer.s"

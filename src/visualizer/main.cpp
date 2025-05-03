@@ -34,6 +34,7 @@ struct SimulationConfig {
     double p_tol = 1e-5;       // Точность Пуассона
     double sim_duration = 10.0; // Желаемая длительность симуляции (в секундах)
     double dt_user = 0.001;   // Желаемый шаг по времени
+    int turbulenceChoice = static_cast<int>(cfd::TurbulenceModelType::None); // 0=None, 1=KEpsilon
 };
 
 // Структура для передачи данных решателя (определена в хедере решателя)
@@ -107,6 +108,11 @@ int main() {
         ImGui::InputInt("Max Iterations", (int*)&cfg.p_max_iter);
         ImGui::InputDouble("Tolerance", &cfg.p_tol, 0.0, 0.0, "%.1e");
         ImGui::Separator();
+        ImGui::Text("Flow Model:");
+        // Используем RadioButton для выбора режима
+        ImGui::RadioButton("Laminar", &cfg.turbulenceChoice, static_cast<int>(cfd::TurbulenceModelType::None)); ImGui::SameLine();
+        ImGui::RadioButton("k-epsilon", &cfg.turbulenceChoice, static_cast<int>(cfd::TurbulenceModelType::KEpsilon));
+        ImGui::Separator();
         if (ImGui::Button("Start Simulation")) { started = true; }
         ImGui::End();
 
@@ -153,8 +159,15 @@ int main() {
         }
     }
     cfd::VelocityPressureSolver solver(
-        geom, cfg.rho, cfg.nu, static_cast<cfd::PoissonType>(cfg.ptype),
-        cfg.cfl, cfg.omega, cfg.p_max_iter, cfg.p_tol
+        geom,
+        cfg.rho, 
+        cfg.nu, 
+        static_cast<cfd::TurbulenceModelType>(cfg.turbulenceChoice),
+        static_cast<cfd::PoissonType>(cfg.ptype),
+        cfg.cfl, 
+        cfg.omega, 
+        cfg.p_max_iter, 
+        cfg.p_tol
     );
     solver.set_inlet_parabola(cfg.umax);
 

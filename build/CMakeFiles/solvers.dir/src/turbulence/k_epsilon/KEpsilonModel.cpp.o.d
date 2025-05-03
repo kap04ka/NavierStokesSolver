@@ -1,10 +1,10 @@
-CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.o: \
- /home/kap04ka/NSSolver2/src/solvers/velocity_pressure/VelocityPressureSolver.cpp \
+CMakeFiles/solvers.dir/src/turbulence/k_epsilon/KEpsilonModel.cpp.o: \
+ /home/kap04ka/NSSolver2/src/turbulence/k_epsilon/KEpsilonModel.cpp \
  /usr/include/stdc-predef.h \
- /home/kap04ka/NSSolver2/src/solvers/velocity_pressure/VelocityPressureSolver.hpp \
- /home/kap04ka/NSSolver2/src/solvers/base/Solver.hpp \
- /home/kap04ka/NSSolver2/src/core/Geometry.hpp \
- /home/kap04ka/NSSolver2/src/core/Mesh2D.hpp /usr/include/c++/13/cstddef \
+ /home/kap04ka/NSSolver2/src/turbulence/k_epsilon/KEpsilonModel.hpp \
+ /home/kap04ka/NSSolver2/src/turbulence/base/TurbulenceModel.hpp \
+ /home/kap04ka/NSSolver2/src/core/Field2D.hpp /usr/include/c++/13/vector \
+ /usr/include/c++/13/bits/requires_hosted.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -16,19 +16,14 @@ CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.
  /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/cpu_defines.h \
  /usr/include/c++/13/pstl/pstl_config.h \
- /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
- /usr/include/c++/13/utility /usr/include/c++/13/bits/stl_relops.h \
- /usr/include/c++/13/bits/stl_pair.h /usr/include/c++/13/type_traits \
- /usr/include/c++/13/bits/move.h /usr/include/c++/13/bits/utility.h \
- /usr/include/c++/13/initializer_list \
- /home/kap04ka/NSSolver2/src/core/Field2D.hpp /usr/include/c++/13/vector \
- /usr/include/c++/13/bits/requires_hosted.h \
  /usr/include/c++/13/bits/stl_algobase.h \
  /usr/include/c++/13/bits/functexcept.h \
  /usr/include/c++/13/bits/exception_defines.h \
  /usr/include/c++/13/bits/cpp_type_traits.h \
  /usr/include/c++/13/ext/type_traits.h \
  /usr/include/c++/13/ext/numeric_traits.h \
+ /usr/include/c++/13/bits/stl_pair.h /usr/include/c++/13/type_traits \
+ /usr/include/c++/13/bits/move.h /usr/include/c++/13/bits/utility.h \
  /usr/include/c++/13/bits/stl_iterator_base_types.h \
  /usr/include/c++/13/bits/stl_iterator_base_funcs.h \
  /usr/include/c++/13/bits/concept_check.h \
@@ -46,6 +41,7 @@ CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.
  /usr/include/c++/13/ext/alloc_traits.h \
  /usr/include/c++/13/bits/alloc_traits.h \
  /usr/include/c++/13/bits/stl_vector.h \
+ /usr/include/c++/13/initializer_list \
  /usr/include/c++/13/bits/stl_bvector.h \
  /usr/include/c++/13/bits/functional_hash.h \
  /usr/include/c++/13/bits/hash_bytes.h /usr/include/c++/13/bits/refwrap.h \
@@ -54,7 +50,8 @@ CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.
  /usr/include/c++/13/backward/binders.h \
  /usr/include/c++/13/bits/range_access.h \
  /usr/include/c++/13/bits/vector.tcc \
- /usr/include/c++/13/bits/memory_resource.h \
+ /usr/include/c++/13/bits/memory_resource.h /usr/include/c++/13/cstddef \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
  /usr/include/c++/13/bits/uses_allocator.h \
  /usr/include/c++/13/bits/uses_allocator_args.h /usr/include/c++/13/tuple \
  /usr/include/c++/13/algorithm /usr/include/c++/13/bits/stl_algo.h \
@@ -134,9 +131,10 @@ CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.
  /usr/include/x86_64-linux-gnu/bits/types/error_t.h \
  /usr/include/c++/13/bits/charconv.h \
  /usr/include/c++/13/bits/basic_string.tcc \
- /home/kap04ka/NSSolver2/src/core/CellTag.hpp \
- /home/kap04ka/NSSolver2/src/turbulence/base/TurbulenceModel.hpp \
- /usr/include/c++/13/memory \
+ /home/kap04ka/NSSolver2/src/core/Geometry.hpp \
+ /home/kap04ka/NSSolver2/src/core/Mesh2D.hpp /usr/include/c++/13/utility \
+ /usr/include/c++/13/bits/stl_relops.h \
+ /home/kap04ka/NSSolver2/src/core/CellTag.hpp /usr/include/c++/13/memory \
  /usr/include/c++/13/bits/stl_raw_storage_iter.h \
  /usr/include/c++/13/bits/align.h \
  /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h /usr/include/stdint.h \
@@ -168,10 +166,25 @@ CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.
  /usr/include/c++/13/bits/atomic_base.h \
  /usr/include/c++/13/bits/atomic_lockfree_defines.h \
  /usr/include/c++/13/backward/auto_ptr.h \
- /usr/include/c++/13/pstl/glue_memory_defs.h \
- /home/kap04ka/NSSolver2/src/math/PoissonSolver.hpp \
- /usr/include/c++/13/cmath /usr/include/math.h \
- /usr/include/x86_64-linux-gnu/bits/math-vector.h \
+ /usr/include/c++/13/pstl/glue_memory_defs.h /usr/include/c++/13/iostream \
+ /usr/include/c++/13/ostream /usr/include/c++/13/ios \
+ /usr/include/c++/13/bits/ios_base.h \
+ /usr/include/c++/13/bits/locale_classes.h \
+ /usr/include/c++/13/bits/locale_classes.tcc \
+ /usr/include/c++/13/system_error \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/error_constants.h \
+ /usr/include/c++/13/streambuf /usr/include/c++/13/bits/streambuf.tcc \
+ /usr/include/c++/13/bits/basic_ios.h \
+ /usr/include/c++/13/bits/locale_facets.h /usr/include/c++/13/cwctype \
+ /usr/include/wctype.h /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/ctype_base.h \
+ /usr/include/c++/13/bits/streambuf_iterator.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/ctype_inline.h \
+ /usr/include/c++/13/bits/locale_facets.tcc \
+ /usr/include/c++/13/bits/basic_ios.tcc \
+ /usr/include/c++/13/bits/ostream.tcc /usr/include/c++/13/istream \
+ /usr/include/c++/13/bits/istream.tcc /usr/include/c++/13/cmath \
+ /usr/include/math.h /usr/include/x86_64-linux-gnu/bits/math-vector.h \
  /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
  /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h \
  /usr/include/x86_64-linux-gnu/bits/fp-logb.h \
@@ -192,22 +205,4 @@ CMakeFiles/solvers.dir/src/solvers/velocity_pressure/VelocityPressureSolver.cpp.
  /usr/include/c++/13/tr1/modified_bessel_func.tcc \
  /usr/include/c++/13/tr1/poly_hermite.tcc \
  /usr/include/c++/13/tr1/poly_laguerre.tcc \
- /usr/include/c++/13/tr1/riemann_zeta.tcc /usr/include/c++/13/iostream \
- /usr/include/c++/13/ostream /usr/include/c++/13/ios \
- /usr/include/c++/13/bits/ios_base.h \
- /usr/include/c++/13/bits/locale_classes.h \
- /usr/include/c++/13/bits/locale_classes.tcc \
- /usr/include/c++/13/system_error \
- /usr/include/x86_64-linux-gnu/c++/13/bits/error_constants.h \
- /usr/include/c++/13/streambuf /usr/include/c++/13/bits/streambuf.tcc \
- /usr/include/c++/13/bits/basic_ios.h \
- /usr/include/c++/13/bits/locale_facets.h /usr/include/c++/13/cwctype \
- /usr/include/wctype.h /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h \
- /usr/include/x86_64-linux-gnu/c++/13/bits/ctype_base.h \
- /usr/include/c++/13/bits/streambuf_iterator.h \
- /usr/include/x86_64-linux-gnu/c++/13/bits/ctype_inline.h \
- /usr/include/c++/13/bits/locale_facets.tcc \
- /usr/include/c++/13/bits/basic_ios.tcc \
- /usr/include/c++/13/bits/ostream.tcc /usr/include/c++/13/istream \
- /usr/include/c++/13/bits/istream.tcc \
- /usr/lib/gcc/x86_64-linux-gnu/13/include/omp.h
+ /usr/include/c++/13/tr1/riemann_zeta.tcc

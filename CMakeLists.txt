@@ -21,6 +21,8 @@ target_include_directories(math PUBLIC src)
 add_library(solvers
     src/solvers/base/Solver.cpp
     src/solvers/velocity_pressure/VelocityPressureSolver.cpp
+    src/turbulence/base/TurbulenceModel.cpp
+    src/turbulence/k_epsilon/KEpsilonModel.cpp
 )
 target_link_libraries(solvers PUBLIC core math)
 target_include_directories(solvers PUBLIC src)
