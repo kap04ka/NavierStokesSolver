@@ -247,10 +247,10 @@ void FlowVisualizer::drawVelocityField() {
             double py = dx_n;
             double bx = end_x - dx_n * headLen;
             double by = end_y - dy_n * headLen;
-            double lx = bx + px * headWidth;
-            double ly = by + py * headWidth;
-            double rx = bx - px * headWidth;
-            double ry = by - py * headWidth;
+            double lx = bx + px * (headWidth / 2.0); // Сдвиг влево на ПОЛОВИНУ headWidth
+            double ly = by + py * (headWidth / 2.0);
+            double rx = bx - px * (headWidth / 2.0); // Сдвиг вправо на ПОЛОВИНУ headWidth
+            double ry = by - py * (headWidth / 2.0);
 
             glBegin(GL_TRIANGLES);
                 glVertex2d(end_x,  end_y);

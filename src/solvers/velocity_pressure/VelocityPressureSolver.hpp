@@ -45,7 +45,8 @@ private:
     // вспомогательные процедуры
     void apply_bc();
     void advect  (Field2D<double>& f,const Field2D<double>& u,const Field2D<double>& v,double dt);
-    void diffuse (Field2D<double>& f,double dt);
+    void diffuse_u(double dt); // <<< Диффузия для u
+    void diffuse_v(double dt); // <<< Диффузия для v
     void project (double dt);
     double compute_cfl_dt(double safety) const;
     double compute_diff_dt() const; // Добавляем для диффузионного лимита
@@ -54,10 +55,9 @@ private:
     Field2D<double>      u_, v_, p_, u_star_, v_star_, rhs_;
     const Field2D<CellTag>& tag_;
 
-    // double rho_;
-    double cfl_;   // коэффициент безопасности CFL
-    unsigned max_pressure_iter_; // Макс. итераций для Пуассона
-    double pressure_tol_;      // Точность для Пуассона
+    double      cfl_;   // коэффициент безопасности CFL
+    unsigned    max_pressure_iter_; // Макс. итераций для Пуассона
+    double      pressure_tol_;      // Точность для Пуассона
 
     PoissonSolverDyn poisson_;
 
