@@ -15,13 +15,16 @@ VelocityPressureSolver::VelocityPressureSolver(
     double rho,
     double nu,
     TurbulenceModelType turb_type,
+    double u_max_inlet,                 
+    double inlet_turb_intensity,      
+    double inlet_length_scale_factor, 
     PoissonType ptype,
     double cfl, 
     double omega,
     unsigned max_p_iter,
     double p_tol)
     : 
-    Solver(geom, rho, nu, turb_type),
+    Solver(geom, rho, nu, turb_type, u_max_inlet, inlet_turb_intensity, inlet_length_scale_factor),
     u_(geom.mesh().nx(), geom.mesh().ny(), 0.0),
     v_(u_), p_(u_),
     u_star_(u_), v_star_(u_), rhs_(u_),

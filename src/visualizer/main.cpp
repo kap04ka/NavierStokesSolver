@@ -35,6 +35,8 @@ struct SimulationConfig {
     double sim_duration = 10.0; // Желаемая длительность симуляции (в секундах)
     double dt_user = 0.001;   // Желаемый шаг по времени
     int turbulenceChoice = static_cast<int>(cfd::TurbulenceModelType::None); // 0=None, 1=KEpsilon
+    double inletTurbIntensity = 0.05; // 5%
+    double inletLengthScaleFactor = 0.07; // 7% от Ly
 };
 
 // Структура для передачи данных решателя (определена в хедере решателя)
@@ -112,6 +114,14 @@ int main() {
         // Используем RadioButton для выбора режима
         ImGui::RadioButton("Laminar", &cfg.turbulenceChoice, static_cast<int>(cfd::TurbulenceModelType::None)); ImGui::SameLine();
         ImGui::RadioButton("k-epsilon", &cfg.turbulenceChoice, static_cast<int>(cfd::TurbulenceModelType::KEpsilon));
+        if (cfg.turbulenceChoice != static_cast<int>(cfd::TurbulenceModelType::None)) {
+            ImGui::Indent();
+            ImGui::InputDouble("Inlet Intensity (0-1)", &cfg.inletTurbIntensity, 0.001, 0.01, "%.3f");
+            cfg.inletTurbIntensity = std::max(0.0, std::min(1.0, cfg.inletTurbIntensity)); // Ограничиваем 0..1
+            ImGui::InputDouble("Inlet L Scale Factor (vs Ly)", &cfg.inletLengthScaleFactor, 0.001, 0.01, "%.3f");
+            cfg.inletLengthScaleFactor = std::max(0.001, cfg.inletLengthScaleFactor); // Ограничиваем снизу
+            ImGui::Unindent();
+        }
         ImGui::Separator();
         if (ImGui::Button("Start Simulation")) { started = true; }
         ImGui::End();
@@ -163,6 +173,9 @@ int main() {
         cfg.rho, 
         cfg.nu, 
         static_cast<cfd::TurbulenceModelType>(cfg.turbulenceChoice),
+        cfg.umax,
+        cfg.inletTurbIntensity,
+        cfg.inletLengthScaleFactor,
         static_cast<cfd::PoissonType>(cfg.ptype),
         cfg.cfl, 
         cfg.omega, 

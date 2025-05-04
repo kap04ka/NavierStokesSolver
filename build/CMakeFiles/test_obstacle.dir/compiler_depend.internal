@@ -11,6 +11,7 @@ CMakeFiles/test_obstacle.dir/tests/test_obstacle.cpp.o
  /home/kap04ka/NSSolver2/src/solvers/base/Solver.hpp
  /home/kap04ka/NSSolver2/src/solvers/velocity_pressure/VelocityPressureSolver.hpp
  /home/kap04ka/NSSolver2/src/turbulence/base/TurbulenceModel.hpp
+ /home/kap04ka/NSSolver2/src/turbulence/k_epsilon/KEpsilonModel.hpp
  /usr/include/alloca.h
  /usr/include/asm-generic/errno-base.h
  /usr/include/asm-generic/errno.h

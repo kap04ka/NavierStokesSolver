@@ -135,19 +135,43 @@ void FlowVisualizer::updateSampling() {
 
 // Отрисовка границ расчетной области
 void FlowVisualizer::drawBoundary() {
-    double Lx = geom_.mesh().dx() * geom_.mesh().nx();
-    double Ly = geom_.mesh().dy() * geom_.mesh().ny();
-    glLineWidth(2.0f); // Можно сделать тоньше
-    glColor3f(0.8f, 0.8f, 0.8f); // Серым цветом
+    const std::size_t nx = geom_.mesh().nx();
+    const std::size_t ny = geom_.mesh().ny();
+    if (ny == 0) return; // Нечего рисовать, если нет высоты
 
-    // Рисуем прямоугольник по границам
-    glBegin(GL_LINE_LOOP);
-        glVertex2d(0.0, 0.0);
-        glVertex2d(Lx, 0.0);
-        glVertex2d(Lx, Ly);
-        glVertex2d(0.0, Ly);
-    glEnd();
-    glLineWidth(1.0f); // Возвращаем толщину линии по умолчанию
+    const double dx = geom_.mesh().dx();
+    const double dy = geom_.mesh().dy();
+
+    // Задаем цвет для стенок (можно такой же, как у препятствий, или другой)
+    glColor3f(0.5f, 0.5f, 0.5f); // Серый цвет, как у препятствий
+
+    glBegin(GL_QUADS); // Начинаем рисовать квадраты
+
+    // --- Рисуем НИЖНЮЮ стенку (все ячейки в строке j=0) ---
+    std::size_t j_bottom = 0;
+    double y_bottom = j_bottom * dy; // y координата нижнего края ячеек j=0
+    for (std::size_t i = 0; i < nx; ++i) {
+        double x = i * dx;
+        // Вершины квадрата для ячейки (i, 0)
+        glVertex2d(x,      y_bottom);      // Нижний левый угол
+        glVertex2d(x + dx, y_bottom);      // Нижний правый угол
+        glVertex2d(x + dx, y_bottom + dy); // Верхний правый угол
+        glVertex2d(x,      y_bottom + dy); // Верхний левый угол
+    }
+
+    // --- Рисуем ВЕРХНЮЮ стенку (все ячейки в строке j=ny-1) ---
+    std::size_t j_top = ny - 1;
+    double y_top = j_top * dy; // y координата нижнего края ячеек j=ny-1
+    for (std::size_t i = 0; i < nx; ++i) {
+        double x = i * dx;
+        // Вершины квадрата для ячейки (i, ny-1)
+        glVertex2d(x,      y_top);      // Нижний левый угол
+        glVertex2d(x + dx, y_top);      // Нижний правый угол
+        glVertex2d(x + dx, y_top + dy); // Верхний правый угол (y = Ly)
+        glVertex2d(x,      y_top + dy); // Верхний левый угол (y = Ly)
+    }
+
+    glEnd(); // Завершаем рисование квадратов
 }
 
 // Отрисовка препятствий

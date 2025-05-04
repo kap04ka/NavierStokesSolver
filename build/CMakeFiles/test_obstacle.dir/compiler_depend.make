@@ -10,6 +10,7 @@ CMakeFiles/test_obstacle.dir/tests/test_obstacle.cpp.o: /home/kap04ka/NSSolver2/
   /home/kap04ka/NSSolver2/src/solvers/base/Solver.hpp \
   /home/kap04ka/NSSolver2/src/solvers/velocity_pressure/VelocityPressureSolver.hpp \
   /home/kap04ka/NSSolver2/src/turbulence/base/TurbulenceModel.hpp \
+  /home/kap04ka/NSSolver2/src/turbulence/k_epsilon/KEpsilonModel.hpp \
   /usr/include/alloca.h \
   /usr/include/asm-generic/errno-base.h \
   /usr/include/asm-generic/errno.h \
@@ -385,6 +386,12 @@ CMakeFiles/test_obstacle.dir/tests/test_obstacle.cpp.o: /home/kap04ka/NSSolver2/
 
 /usr/include/c++/13/tr1/ell_integral.tcc:
 
+/usr/include/x86_64-linux-gnu/bits/thread-shared-types.h:
+
+/usr/include/c++/13/system_error:
+
+/usr/include/c++/13/bits/range_access.h:
+
 /usr/include/c++/13/debug/debug.h:
 
 /usr/include/c++/13/stdexcept:
@@ -419,12 +426,6 @@ CMakeFiles/test_obstacle.dir/tests/test_obstacle.cpp.o: /home/kap04ka/NSSolver2/
 
 /usr/include/c++/13/bits/functional_hash.h:
 
-/usr/include/c++/13/bits/nested_exception.h:
-
-/usr/include/c++/13/bits/istream.tcc:
-
-/usr/include/c++/13/bits/exception_ptr.h:
-
 /usr/include/math.h:
 
 /usr/include/c++/13/bits/exception_defines.h:
@@ -441,30 +442,6 @@ CMakeFiles/test_obstacle.dir/tests/test_obstacle.cpp.o: /home/kap04ka/NSSolver2/
 
 /usr/include/c++/13/bits/move.h:
 
-/usr/include/x86_64-linux-gnu/bits/math-vector.h:
-
-/usr/include/c++/13/bits/hash_bytes.h:
-
-/usr/include/asm-generic/errno-base.h:
-
-/usr/include/features-time64.h:
-
-/usr/include/c++/13/string_view:
-
-/usr/include/c++/13/algorithm:
-
-/usr/include/x86_64-linux-gnu/bits/types/error_t.h:
-
-/usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h:
-
-/usr/include/c++/13/bits/stl_raw_storage_iter.h:
-
-/usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h:
-
-/usr/include/x86_64-linux-gnu/c++/13/bits/c++locale.h:
-
-/usr/include/c++/13/bits/ptr_traits.h:
-
 /usr/include/c++/13/cwctype:
 
 /usr/include/c++/13/bits/predefined_ops.h:
@@ -477,6 +454,24 @@ CMakeFiles/test_obstacle.dir/tests/test_obstacle.cpp.o: /home/kap04ka/NSSolver2/
 
 /usr/include/c++/13/cwchar:
 
+/usr/include/asm-generic/errno-base.h:
+
+/usr/include/x86_64-linux-gnu/bits/math-vector.h:
+
+/usr/include/c++/13/bits/hash_bytes.h:
+
+/usr/include/features-time64.h:
+
+/usr/include/c++/13/string_view:
+
+/usr/include/c++/13/bits/nested_exception.h:
+
+/usr/include/c++/13/bits/istream.tcc:
+
+/usr/include/c++/13/bits/exception_ptr.h:
+
+/usr/include/c++/13/bits/stl_iterator_base_types.h:
+
 /usr/include/x86_64-linux-gnu/bits/uintn-identity.h:
 
 /usr/include/x86_64-linux-gnu/bits/stdlib-float.h:
@@ -484,10 +479,6 @@ CMakeFiles/test_obstacle.dir/tests/test_obstacle.cpp.o: /home/kap04ka/NSSolver2/
 /usr/include/c++/13/bits/exception.h:
 
 /usr/include/c++/13/streambuf:
-
-/usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h:
-
-/usr/include/c++/13/bits/refwrap.h:
 
 /usr/include/x86_64-linux-gnu/bits/atomic_wide_counter.h:
 
@@ -511,10 +502,6 @@ CMakeFiles/test_obstacle.dir/tests/test_obstacle.cpp.o: /home/kap04ka/NSSolver2/
 
 /home/kap04ka/NSSolver2/src/solvers/velocity_pressure/VelocityPressureSolver.hpp:
 
-/usr/include/alloca.h:
-
-/home/kap04ka/NSSolver2/src/turbulence/base/TurbulenceModel.hpp:
-
 /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h:
 
 /home/kap04ka/NSSolver2/src/math/PoissonSolver.hpp:
@@ -527,9 +514,27 @@ CMakeFiles/test_obstacle.dir/tests/test_obstacle.cpp.o: /home/kap04ka/NSSolver2/
 
 /usr/include/c++/13/bits/shared_ptr_atomic.h:
 
-/usr/include/c++/13/bits/basic_string.tcc:
+/home/kap04ka/NSSolver2/src/turbulence/base/TurbulenceModel.hpp:
+
+/usr/include/alloca.h:
 
 /usr/include/c++/13/bit:
+
+/usr/include/c++/13/bits/basic_string.tcc:
+
+/usr/include/c++/13/algorithm:
+
+/usr/include/x86_64-linux-gnu/bits/types/error_t.h:
+
+/usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h:
+
+/usr/include/c++/13/bits/stl_raw_storage_iter.h:
+
+/usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h:
+
+/usr/include/x86_64-linux-gnu/c++/13/bits/c++locale.h:
+
+/usr/include/c++/13/bits/ptr_traits.h:
 
 /usr/include/c++/13/backward/auto_ptr.h:
 
@@ -585,6 +590,10 @@ CMakeFiles/test_obstacle.dir/tests/test_obstacle.cpp.o: /home/kap04ka/NSSolver2/
 
 /usr/include/c++/13/bits/specfun.h:
 
+/usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h:
+
+/usr/include/c++/13/bits/refwrap.h:
+
 /usr/include/c++/13/bits/locale_facets.tcc:
 
 /usr/include/c++/13/bits/requires_hosted.h:
@@ -627,8 +636,6 @@ CMakeFiles/test_obstacle.dir/tests/test_obstacle.cpp.o: /home/kap04ka/NSSolver2/
 
 /usr/include/c++/13/bits/stl_iterator_base_funcs.h:
 
-/usr/include/c++/13/bits/stl_iterator_base_types.h:
-
 /usr/include/x86_64-linux-gnu/bits/types/clockid_t.h:
 
 /usr/include/c++/13/bits/stl_relops.h:
@@ -636,6 +643,8 @@ CMakeFiles/test_obstacle.dir/tests/test_obstacle.cpp.o: /home/kap04ka/NSSolver2/
 /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h:
 
 /usr/include/c++/13/bits/stl_tempbuf.h:
+
+/home/kap04ka/NSSolver2/src/turbulence/k_epsilon/KEpsilonModel.hpp:
 
 /usr/include/c++/13/bits/stl_vector.h:
 
@@ -752,9 +761,3 @@ CMakeFiles/test_obstacle.dir/tests/test_obstacle.cpp.o: /home/kap04ka/NSSolver2/
 /usr/include/x86_64-linux-gnu/bits/wordsize.h:
 
 /usr/include/c++/13/pstl/pstl_config.h:
-
-/usr/include/x86_64-linux-gnu/bits/thread-shared-types.h:
-
-/usr/include/c++/13/bits/range_access.h:
-
-/usr/include/c++/13/system_error:

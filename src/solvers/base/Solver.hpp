@@ -1,17 +1,47 @@
 #pragma once
 #include "core/Geometry.hpp"
 #include "turbulence/base/TurbulenceModel.hpp"
+#include "turbulence/k_epsilon/KEpsilonModel.hpp"
 #include <memory>
+#include <iostream>
 
 namespace cfd {
 class Solver {
 public:
-    Solver(const Geometry& geom, double rho, double nu_molecular, TurbulenceModelType turb_type)
-        :   geom_(geom),
-            rho_(rho),
-            nu_molecular_(nu_molecular),
-            turbulence_model_(createTurbulenceModel(turb_type, geom, rho, nu_molecular))
-            {}
+    Solver(const Geometry& geom, double rho, double nu_molecular,
+        TurbulenceModelType turb_type,
+        double u_max_inlet,
+        double inlet_turb_intensity = 0.05,
+        double inlet_length_scale_factor = 0.07)
+        : geom_(geom),
+          rho_(rho),
+          nu_molecular_(nu_molecular),
+          turbulence_model_(nullptr)
+        {
+            // --- Создаем модель турбулентности НАПРЯМУЮ ---
+            switch (turb_type) {
+                case TurbulenceModelType::None:
+                    std::cout << "Solver created with Turbulence Model: None (Laminar)" << std::endl;
+                    // turbulence_model_ остается nullptr
+                    break;
+                case TurbulenceModelType::KEpsilon:
+                    std::cout << "Solver created with Turbulence Model: k-epsilon" << std::endl;
+                    // Создаем KEpsilonModel, передавая нужные параметры
+                    turbulence_model_ = std::make_unique<KEpsilonModel>(
+                        geom, rho, nu_molecular,
+                        u_max_inlet, // << Передаем umax
+                        inlet_turb_intensity,
+                        inlet_length_scale_factor
+                        // Можно передать и структуру констант, если нужно
+                    );
+                    break;
+                // case TurbulenceModelType::KOmega:
+                //     // turbulence_model_ = std::make_unique<KOmegaModel>(...);
+                //     break;
+                default:
+                    throw std::runtime_error("Unknown turbulence model type requested in Solver constructor.");
+            } 
+        }
     virtual ~Solver() = default;
     virtual void step(double dt) = 0;
     // Метод для получения эффективной вязкости
@@ -25,6 +55,9 @@ public:
                 return nu_molecular_;
             }
         }
+    [[nodiscard]] const TurbulenceModel* getTurbulenceModel() const { return turbulence_model_.get(); }
+    [[nodiscard]] TurbulenceModel* getTurbulenceModel() { return turbulence_model_.get(); }
+
 protected:
     const Geometry& geom_;
     double          rho_;
