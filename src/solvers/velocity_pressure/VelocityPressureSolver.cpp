@@ -33,10 +33,27 @@ VelocityPressureSolver::VelocityPressureSolver(
 void VelocityPressureSolver::set_inlet_parabola(double umax)
 {
     const std::size_t ny = geom_.mesh().ny();
-    const double H = geom_.mesh().dy() * (ny - 1);
+    const double Ly = geom_.mesh().Ly(); // <-- Используем полную высоту канала
+    const double dy = geom_.mesh().dy(); // <-- Шаг по y
+
+    // Проверка на случай нулевой высоты канала
+    if (std::abs(Ly) < 1e-12) {
+        for (std::size_t j = 0; j < ny; ++j) {
+            u_(0, j) = 0.0;
+            v_(0, j) = 0.0;
+        }
+        return; // Выходим, если высота нулевая
+    }
+
+    const double Ly_sq = Ly * Ly; // <-- Предварительно вычисляем H^2 = Ly^2
+
     for (std::size_t j = 0; j < ny; ++j) {
-        double y = j * geom_.mesh().dy();
-        u_(0, j) = 4.0 * umax * y * (H - y) / (H * H);
+        // Вычисляем y-координату ЦЕНТРА ячейки j
+        double y_center = (j + 0.5) * dy;
+
+        u_(0, j) = 4.0 * umax * y_center * (Ly - y_center) / Ly_sq;
+
+        // v-компонента на входе равна нулю
         v_(0, j) = 0.0;
     }
 }
@@ -164,22 +181,9 @@ void VelocityPressureSolver::project(double dt)
     const double dx = geom_.mesh().dx();
     const double dy = geom_.mesh().dy();
 
-    // 1 Ри-чоу
     
-    // 2. Вычисляем правую часть для уравнения Пуассона (rhs_)
-#ifdef USE_OPENMP
-    #pragma omp parallel for collapse(2)
-#endif
-    for (std::size_t j = 1; j < ny - 1; ++j) {
-        for (std::size_t i = 1; i < nx - 1; ++i) {
-            if (tag_(i, j) == CellTag::SOLID) {
-                rhs_(i, j) = 0.0;
-                continue;
-            }
-            double div=(u_star_(i+1,j)-u_star_(i-1,j))/(2*dx) + (v_star_(i,j+1)-v_star_(i,j-1))/(2*dy);
-            rhs_(i,j)=rho_*div/dt;
-        }
-    }
+    // 1. Вычисляем правую часть для уравнения Пуассона (rhs_) (Rhie-chow like)
+    calculatePoissonRHS_RhieChow(rhs_, dt);
 
     // 3. Установка ГРАНИЧНЫХ УСЛОВИЙ для ДАВЛЕНИЯ ПЕРЕД решением Пуассона
     // (Этот блок остается без изменений)
@@ -218,25 +222,78 @@ void VelocityPressureSolver::project(double dt)
     // --- Конец отладки ---
 
     // 5. Корректируем скорости
-#ifdef USE_OPENMP
-    #pragma omp parallel for collapse(2)
-#endif
-    for (std::size_t j = 1; j < ny - 1; ++j) {
+// #ifdef USE_OPENMP
+//     #pragma omp parallel for collapse(2)
+// #endif
+//     for (std::size_t j = 1; j < ny - 1; ++j) {
+//         for (std::size_t i = 1; i < nx - 1; ++i) {
+//             if (tag_(i, j) == CellTag::SOLID) {
+//                 continue;
+//             }
+
+//              double p_ip1 = (tag_(i+1,j) == CellTag::SOLID) ? p_(i,j) : p_(i+1,j);
+//              double p_im1 = (tag_(i-1,j) == CellTag::SOLID) ? p_(i,j) : p_(i-1,j);
+//              double p_jp1 = (tag_(i,j+1) == CellTag::SOLID) ? p_(i,j) : p_(i,j+1);
+//              double p_jm1 = (tag_(i,j-1) == CellTag::SOLID) ? p_(i,j) : p_(i,j-1);
+
+//              double dpdx_center = (p_ip1 - p_im1) / (2.0 * dx);
+//              double dpdy_center = (p_jp1 - p_jm1) / (2.0 * dy);
+
+//             u_(i, j) = u_star_(i, j) - dt / rho_ * dpdx_center;
+//             v_(i, j) = v_star_(i, j) - dt / rho_ * dpdy_center;
+//         }
+//     }
+    for (std::size_t j = 0; j < ny; ++j) {
         for (std::size_t i = 1; i < nx - 1; ++i) {
             if (tag_(i, j) == CellTag::SOLID) {
+                u_(i,j) = 0.0;
+                v_(i,j) = 0.0;
                 continue;
             }
 
-             double p_ip1 = (tag_(i+1,j) == CellTag::SOLID) ? p_(i,j) : p_(i+1,j);
-             double p_im1 = (tag_(i-1,j) == CellTag::SOLID) ? p_(i,j) : p_(i-1,j);
-             double p_jp1 = (tag_(i,j+1) == CellTag::SOLID) ? p_(i,j) : p_(i,j+1);
-             double p_jm1 = (tag_(i,j-1) == CellTag::SOLID) ? p_(i,j) : p_(i,j-1);
+            // --- Расчет градиентов давления в центре (i,j) ---
+            double p_L, p_R, p_B, p_T;
 
-             double dpdx_center = (p_ip1 - p_im1) / (2.0 * dx);
-             double dpdy_center = (p_jp1 - p_jm1) / (2.0 * dy);
+            // Соседи по X для dpdx
+            if (i == 1) p_L = p_(1, j); // ГУ Неймана p(0)=p(1) -> используем p(1) как эффективное значение в i=0 для градиента в i=1
+            else if (tag_(i - 1, j) == CellTag::SOLID) p_L = p_(i, j); // Нулевой градиент у SOLID
+            else p_L = p_(i - 1, j);
 
+            if (i == nx - 2) { // Узел перед выходом
+                if (tag_(nx - 1, j) == CellTag::SOLID) p_R = p_(i,j); // Нулевой градиент у SOLID
+                else p_R = p_(nx-1, j); // Используем давление на выходе (p=0 или Нейман p(N-1)=p(N-2))
+            }
+            else if (tag_(i + 1, j) == CellTag::SOLID) p_R = p_(i, j); // Нулевой градиент у SOLID
+            else p_R = p_(i + 1, j);
+
+            double dpdx_center = (std::abs(dx) > 1e-12) ? (p_R - p_L) / (2.0 * dx) : 0.0;
+
+            // Соседи по Y для dpdy
+            // !!! ОБЪЯВЛЯЕМ dpdy_center ЗДЕСЬ !!!
+            double dpdy_center = 0.0;
+
+            if (j == 0) { // Нижняя стенка: ГУ Неймана dp/dy=0
+                // dpdy_center остается 0.0
+            }
+            else if (j == ny - 1) { // Верхняя стенка: ГУ Неймана dp/dy=0
+                // dpdy_center остается 0.0
+            }
+            else { // Внутренняя ячейка (j от 1 до ny-2)
+                p_T = (tag_(i, j + 1) == CellTag::SOLID) ? p_(i, j) : p_(i, j + 1); // Нулевой градиент у SOLID
+                p_B = (tag_(i, j - 1) == CellTag::SOLID) ? p_(i, j) : p_(i, j - 1); // Нулевой градиент у SOLID
+                // Вычисляем градиент для внутренних ячеек
+                dpdy_center = (std::abs(dy) > 1e-12) ? (p_T - p_B) / (2.0 * dy) : 0.0;
+            }
+
+            // --- Коррекция скорости ---
             u_(i, j) = u_star_(i, j) - dt / rho_ * dpdx_center;
-            v_(i, j) = v_star_(i, j) - dt / rho_ * dpdy_center;
+            v_(i, j) = v_star_(i, j) - dt / rho_ * dpdy_center; // Теперь dpdy_center определен всегда
+
+            // --- Принудительно v=0 у горизонтальных стенок ---
+            // Это важно, так как коррекция v основана на dpdy=0, но v_star мог быть ненулевым
+            if (j == 0 || j == ny-1) {
+                v_(i, j) = 0.0;
+            }
         }
     }
 }
@@ -248,8 +305,8 @@ void VelocityPressureSolver::step(double dt_user)
 
     double dt_cfl = compute_cfl_dt(cfl_);
     double dt_diff = compute_diff_dt();
-    // Выбираем минимальный шаг из трех: пользовательский, CFL, диффузионный
     double dt = dt_user;
+    // Выбираем минимальный шаг из трех: пользовательский, CFL, диффузионный
     dt = std::min(dt, dt_cfl);
     dt = std::min(dt, dt_diff); // Учитываем лимит диффузии
 
