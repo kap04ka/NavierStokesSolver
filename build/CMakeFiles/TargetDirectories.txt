@@ -1,7 +1,0 @@
-/home/kap04ka/NSSolver2/build/CMakeFiles/core.dir
-/home/kap04ka/NSSolver2/build/CMakeFiles/math.dir
-/home/kap04ka/NSSolver2/build/CMakeFiles/solvers.dir
-/home/kap04ka/NSSolver2/build/CMakeFiles/test_obstacle.dir
-/home/kap04ka/NSSolver2/build/CMakeFiles/cfd_visualizer.dir
-/home/kap04ka/NSSolver2/build/CMakeFiles/edit_cache.dir
-/home/kap04ka/NSSolver2/build/CMakeFiles/rebuild_cache.dir
