@@ -193,7 +193,7 @@ void VorticityStreamfunctionSolver::apply_boundary_conditions_omega() {
 
     // 2. Внутренние SOLID препятствия (используя фиксированное target_psi_value для них)
     if (use_fixed_psi_on_obstacles_) {
-        double alpha_omega_wall = 0.1; 
+        double alpha_omega_wall = 0.05; 
         for (const auto& obs_info : internal_obstacles_psi_info_) {
             for (const auto& solid_cell : obs_info.cells) {
                 std::size_t i_solid = solid_cell.first;
@@ -345,34 +345,53 @@ void VorticityStreamfunctionSolver::diffuse_vorticity(double dt) {
     const std::size_t ny = geom_.mesh().ny();
     const double dx = geom_.mesh().dx();
     const double dy = geom_.mesh().dy();
-    const double dx2 = dx * dx;
-    const double dy2 = dy * dy;
+    // const auto& tags = original_tags_; // Используем original_tags_ для SOLID препятствий
 
-    Field2D<double> diffusion_contribution(nx, ny, 0.0);
+    // Временное поле для хранения полного диффузионного члена D(omega^n)
+    Field2D<double> diffusion_term_laplacian(nx, ny, 0.0);
 
     for (std::size_t j = 1; j < ny - 1; ++j) {
         for (std::size_t i = 1; i < nx - 1; ++i) {
-            if (original_tags_(i,j) == CellTag::SOLID) {
-                continue; 
+            if (original_tags_(i, j) == CellTag::SOLID) { // Пропускаем внутренние SOLID препятствия
+                continue;
             }
-            
-            double nu_eff_ij = get_effective_viscosity(i,j); 
 
-            // --- ДЛЯ ТУРБУЛЕНТНОСТИ ЭТОТ БЛОК НУЖНО ПЕРЕПИСАТЬ НА ПОТОКОВУЮ ФОРМУ ---
-            // --- Текущая реализация корректна только для постоянной nu_eff (ламинарный режим) ---
-            if (nu_eff_ij > 1e-12) { 
-                double d2omega_dx2 = (omega_old_(i+1,j) - 2.0*omega_old_(i,j) + omega_old_(i-1,j)) / dx2;
-                double d2omega_dy2 = (omega_old_(i,j+1) - 2.0*omega_old_(i,j) + omega_old_(i,j-1)) / dy2;
-                diffusion_contribution(i,j) = nu_eff_ij * (d2omega_dx2 + d2omega_dy2);
-            }
-            // --- КОНЕЦ БЛОКА, ТРЕБУЮЩЕГО УЛУЧШЕНИЯ ДЛЯ ТУРБУЛЕНТНОСТИ ---
+            // Эффективная вязкость в центре текущей ячейки (i,j) и соседних
+            // nu_eff^n (т.к. используем omega_old_ для производных)
+            double nu_eff_ij = get_effective_viscosity(i, j);
+            double nu_eff_ip1j = get_effective_viscosity(i + 1, j);
+            double nu_eff_im1j = get_effective_viscosity(i - 1, j);
+            double nu_eff_ijp1 = get_effective_viscosity(i, j + 1);
+            double nu_eff_ijm1 = get_effective_viscosity(i, j - 1);
+
+            // Вязкости на гранях ячейки (i,j)
+            double nu_eff_e_face = 0.5 * (nu_eff_ij + nu_eff_ip1j); // Восточная грань (i+1/2, j)
+            double nu_eff_w_face = 0.5 * (nu_eff_ij + nu_eff_im1j); // Западная грань (i-1/2, j)
+            double nu_eff_n_face = 0.5 * (nu_eff_ij + nu_eff_ijp1); // Северная грань (i, j+1/2)
+            double nu_eff_s_face = 0.5 * (nu_eff_ij + nu_eff_ijm1); // Южная грань  (i, j-1/2)
+
+            // Градиенты omega_old_ на гранях
+            double domega_dx_e = (omega_old_(i + 1, j) - omega_old_(i, j)) / dx;
+            double domega_dx_w = (omega_old_(i, j) - omega_old_(i - 1, j)) / dx;
+            double domega_dy_n = (omega_old_(i, j + 1) - omega_old_(i, j)) / dy;
+            double domega_dy_s = (omega_old_(i, j) - omega_old_(i, j - 1)) / dy;
+
+            // Потоки вихря через грани
+            double flux_omega_e = nu_eff_e_face * domega_dx_e;
+            double flux_omega_w = nu_eff_w_face * domega_dx_w;
+            double flux_omega_n = nu_eff_n_face * domega_dy_n;
+            double flux_omega_s = nu_eff_s_face * domega_dy_s;
+
+            // Диффузионный член для ячейки (i,j)
+            diffusion_term_laplacian(i, j) = (flux_omega_e - flux_omega_w) / dx +
+                                             (flux_omega_n - flux_omega_s) / dy;
         }
     }
     
     for (std::size_t j = 1; j < ny - 1; ++j) {
         for (std::size_t i = 1; i < nx - 1; ++i) {
-             if (original_tags_(i,j) != CellTag::SOLID) {
-                omega_(i,j) += dt * diffusion_contribution(i,j);
+             if (original_tags_(i,j) != CellTag::SOLID) { // Только для жидких ячеек
+                omega_(i,j) += dt * diffusion_term_laplacian(i,j);
              }
         }
     }
@@ -503,6 +522,16 @@ void VorticityStreamfunctionSolver::step(double dt_user) {
         cfd::exportFieldToCSV(omega_, "vs_omega_step_" + step_str + ".csv");
         cfd::exportFieldToCSV(u_from_psi_, "vs_u_step_" + step_str + ".csv");
         cfd::exportFieldToCSV(v_from_psi_, "vs_v_step_" + step_str + ".csv");
+
+        int nx = geom_.mesh().nx();
+        int ny = geom_.mesh().ny();
+        Field2D<double> eff_nu(nx, ny);
+
+        for(size_t i = 0; i < nx; ++i)
+            for(size_t j = 0; j < ny; ++j)
+                eff_nu(i,j) = get_effective_viscosity(i,j);
+        cfd::exportFieldToCSV(eff_nu, "eff_nu" + step_str + ".csv");
+
     }
 
 }
