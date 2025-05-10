@@ -14,6 +14,11 @@ struct ConvergenceInfo {
     double residual = 0;
 };
 
+enum class PoissonMode { 
+    VelocityPressure, 
+    VorticityStreamfunction 
+};
+
 /** Абстрактный базовый класс */
 class PoissonSolver {
 public:
@@ -22,6 +27,7 @@ public:
         Field2D<double>&       phi,
         const Field2D<double>& rhs,
         const Geometry&        geom,
+        PoissonMode            mode,
         unsigned               maxIter = 400,
         double                 tol     = 1e-5) = 0;
 };
@@ -33,6 +39,7 @@ public:
         Field2D<double>&       phi,
         const Field2D<double>& rhs,
         const Geometry&        geom,
+        PoissonMode            mode,
         unsigned               maxIter = 400,
         double                 tol     = 1e-5) override;
 };
@@ -46,6 +53,7 @@ public:
         Field2D<double>&       phi,
         const Field2D<double>& rhs,
         const Geometry&        geom,
+        PoissonMode            mode,
         unsigned               maxIter = 400,
         double                 tol     = 1e-5) override;
 private:
@@ -55,12 +63,13 @@ private:
 /* --------- динамический выбор --------- */
 class PoissonSolverDyn : public PoissonSolver {
 public:
-    explicit PoissonSolverDyn(PoissonType type, double omega) : type_(type), sor_(omega) {}
+    explicit PoissonSolverDyn(PoissonType type, double omega) : type_(type), jac_(), sor_(omega) {}
 
     [[nodiscard]] ConvergenceInfo solve(
         Field2D<double>&       phi,
         const Field2D<double>& rhs,
         const Geometry&        geom,
+        PoissonMode            mode,
         unsigned               maxIter = 400,
         double                 tol     = 1e-5) override;
 private:

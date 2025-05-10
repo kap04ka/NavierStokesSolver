@@ -16,6 +16,7 @@ public:
         : geom_(geom),
           rho_(rho),
           nu_molecular_(nu_molecular),
+          u_max_inlet_bc_(u_max_inlet),
           turbulence_model_(nullptr)
         {
             // --- Создаем модель турбулентности НАПРЯМУЮ ---
@@ -29,7 +30,7 @@ public:
                     // Создаем KEpsilonModel, передавая нужные параметры
                     turbulence_model_ = std::make_unique<KEpsilonModel>(
                         geom, rho, nu_molecular,
-                        u_max_inlet, // << Передаем umax
+                        u_max_inlet_bc_, // << Передаем umax
                         inlet_turb_intensity,
                         inlet_length_scale_factor
                         // Можно передать и структуру констант, если нужно
@@ -62,7 +63,7 @@ protected:
     const Geometry& geom_;
     double          rho_;
     double          nu_molecular_;
-    
+    double          u_max_inlet_bc_;
     std::unique_ptr<TurbulenceModel> turbulence_model_;
 };
 } // namespace cfd

@@ -93,7 +93,7 @@ double VelocityPressureSolver::compute_cfl_dt(double safety) const
 {
     double umax=0.0, vmax=0.0;
     #ifdef USE_OPENMP
-       #pragma omp parallel for reduction(max:umax, vmax) collapse(2)
+       #pragma omp parallel for reduction(max: umax) reduction(max: vmax) collapse(2)
     #endif
     for(std::size_t j=0;j<geom_.mesh().ny();++j)
         for(std::size_t i=0;i<geom_.mesh().nx();++i){
@@ -140,9 +140,9 @@ void VelocityPressureSolver::advect(Field2D<double>& f,const Field2D<double>& u,
     const double dx=geom_.mesh().dx(), dy=geom_.mesh().dy();
     const std::size_t nx=geom_.mesh().nx(), ny=geom_.mesh().ny();
     Field2D<double> f_old = f;
-// #ifdef USE_OPENMP
-//     #pragma omp parallel for
-// #endif
+#ifdef USE_OPENMP
+    #pragma omp parallel for collapse(2)
+#endif
     for(std::size_t j=1;j<ny-1;++j)
         for(std::size_t i=1;i<nx-1;++i){
             if(tag_(i,j)==CellTag::SOLID){ f(i,j)=0; continue; }
@@ -376,7 +376,7 @@ void VelocityPressureSolver::calculatePoissonRHS_RhieChow(Field2D<double>& rhs, 
     const double dy = geom_.mesh().dy();
 
 #ifdef USE_OPENMP
-    #pragma omp parallel for collapse(2) // Потенциально нужны доп. меры для OMP здесь
+    #pragma omp parallel for collapse(2)
 #endif
     for (std::size_t j = 1; j < ny - 1; ++j) { // Цикл по внутренним ячейкам
         for (std::size_t i = 1; i < nx - 1; ++i) {
@@ -453,7 +453,7 @@ void VelocityPressureSolver::project(double dt)
     }
 
     // 4. Решаем Пуассона
-    ConvergenceInfo p_info = poisson_.solve(p_, rhs_, geom_, max_pressure_iter_, pressure_tol_);
+    ConvergenceInfo p_info = poisson_.solve(p_, rhs_, geom_, PoissonMode::VelocityPressure, max_pressure_iter_, pressure_tol_);
     // --- Обновляем информацию о сходимости НАПРЯМУЮ в структуре ---
     last_monitor_info_.pressureIterations = p_info.iterations;
     last_monitor_info_.pressureResidual = p_info.residual;
