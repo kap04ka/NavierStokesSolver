@@ -152,6 +152,9 @@ void VelocityPressureSolver::advect(Field2D<double>& f,const Field2D<double>& u,
         }
 }
 
+
+// В src/solvers/velocity_pressure/VelocityPressureSolver.cpp
+
 void VelocityPressureSolver::diffuse_u(double dt) {
     const auto nx = geom_.mesh().nx();
     const auto ny = geom_.mesh().ny();
@@ -163,14 +166,9 @@ void VelocityPressureSolver::diffuse_u(double dt) {
 
     Field2D<double> u_old = u_star_;
 
-    bool turbulent = (turbulence_model_ != nullptr);
-    TurbulenceModel* turb_model_ptr = getTurbulenceModel();
+    bool turbulent = (this->turbulence_model_ != nullptr);
+    TurbulenceModel* turb_model_ptr = this->getTurbulenceModel();
 
-#ifdef USE_OPENMP
-    // OMP пока убран для ясности логики ГУ
-    // #pragma omp parallel for collapse(2)
-#endif
-    // Идем по внутренним ячейкам, где решаем уравнение
     for (std::size_t j = 1; j < ny - 1; ++j) {
         for (std::size_t i = 1; i < nx - 1; ++i) {
             if (tags(i, j) == CellTag::SOLID) {
@@ -179,90 +177,92 @@ void VelocityPressureSolver::diffuse_u(double dt) {
             }
 
             double nu_eff_ij = get_effective_viscosity(i, j);
-            if (nu_eff_ij < 1e-12) continue;
+            
+            // Определяем, примыкает ли ячейка к ВНУТРЕННЕМУ SOLID препятствию СВЕРХУ или СНИЗУ
+            // (не к внешним стенкам канала j=0 или j=ny-1)
+            bool is_top_channel_boundary_for_logic    = (j == ny - 2);
+            bool is_bottom_channel_boundary_for_logic = (j == 1);
+            bool solid_obstacle_above = !is_top_channel_boundary_for_logic && (j + 1 < ny -1) && (tags(i,j+1) == CellTag::SOLID);
+            bool solid_obstacle_below = !is_bottom_channel_boundary_for_logic && (j - 1 > 0) && (tags(i,j-1) == CellTag::SOLID);
 
-            double lap_ij = 0.0; // Лапласиан для текущей ячейки
+            bool is_potentially_turbulent_wall_for_u = turbulent && turb_model_ptr && 
+                                                       (solid_obstacle_above || solid_obstacle_below);
 
-            // --- X-компонента Лапласиана (с учетом SOLID) ---
-            double u_ip1 = (tags(i + 1, j) == CellTag::SOLID) ? -u_old(i, j) // Ghost cell u=0 -> ug = -ui
-                           : u_old(i + 1, j);
-            double u_im1 = (tags(i - 1, j) == CellTag::SOLID) ? -u_old(i, j) // Ghost cell u=0 -> ug = -ui
-                           : u_old(i - 1, j);
-            // Проверяем границы входа/выхода - там ГУ другие
-            if (i == 1) u_im1 = u_old(0, j); // Используем значение Дирихле на входе
-            if (i == nx - 2) u_ip1 = u_old(i, j); // Используем Неймана на выходе du/dx=0 => u(N)=u(N-1)
+            if (nu_eff_ij < 1e-12 && !is_potentially_turbulent_wall_for_u) {
+                 continue;
+            }
 
-            double d2udx2 = (u_ip1 + u_im1 - 2.0 * u_old(i, j)) / dx2;
+            double lap_ij = 0.0; // <--- ОБЪЯВЛЕНИЕ lap_ij
 
-            // --- Y-компонента Лапласиана (с учетом стенок и режима) ---
-            double d2udy2 = 0.0;
-            double u_jp1, u_jm1;
+            // --- X-компонента Лапласиана (d2udx2_simple) ---
+            double u_ip1_val = (tags(i + 1, j) == CellTag::SOLID) ? -u_old(i, j) 
+                                                                 : u_old(i + 1, j);
+            double u_im1_val = (tags(i - 1, j) == CellTag::SOLID) ? -u_old(i, j) 
+                                                                 : u_old(i - 1, j);
+            if (i == 1) u_im1_val = u_old(0, j); 
+            if (i == nx - 2) u_ip1_val = u_old(i, j); 
+            double d2udx2_simple = (u_ip1_val + u_im1_val - 2.0 * u_old(i, j)) / dx2;
 
-            // Верхний сосед j+1
-            if (j + 1 >= ny - 1 || tags(i, j + 1) == CellTag::SOLID) { // Верхняя стенка (граница или SOLID)
+            // --- Y-компонента Лапласиана (d2udy2_final_term) ---
+            double d2udy2_final_term; 
+            bool y_term_includes_nu_eff = false; // <--- ОБЪЯВЛЕНИЕ y_term_includes_nu_eff
+            
+            if (is_top_channel_boundary_for_logic) { 
+                double u_jp1_boundary = 0.0; 
+                double u_jm1_neighbor = u_old(i, j - 1);
+                d2udy2_final_term = (u_jp1_boundary + u_jm1_neighbor - 2.0 * u_old(i, j)) / dy2;
+            } 
+            else if (solid_obstacle_above) { 
                 if (turbulent && turb_model_ptr) {
-                    // Турбулентный: Поток через стенку равен tau_wx/rho
                     std::pair<double, double> tau_w_pair = turb_model_ptr->get_wall_shear_stress(i, j, BoundarySide::TOP);
-                    double flux_n = tau_w_pair.first / rho_;
-                    // Поток через южную грань (j-1/2) - стандартный
-                    double nu_eff_s = 0.5 * (nu_eff_ij + get_effective_viscosity(i, j - 1)); // Сосед j-1 точно FLUID
-                    double flux_s = -nu_eff_s * (u_old(i, j) - u_old(i, j - 1)) / dy;
-                    // Вся Y-диффузия = (ПотокСевер - ПотокЮг) / dy
-                    d2udy2 = (flux_n - flux_s) / dy; // Делим на dy, а не dy2!
-                } else { // Ламинарный: u=0 на стенке
-                    u_jp1 = 0.0; // Значение НА стенке
-                    u_jm1 = u_old(i, j - 1); // Сосед снизу точно FLUID
-                    d2udy2 = (u_jp1 + u_jm1 - 2.0 * u_old(i, j)) / dy2; // Стандартный Лапласиан с u_jp1=0
+                    double flux_n_wall = tau_w_pair.first / rho_;
+                    double nu_eff_s_face = 0.5 * (nu_eff_ij + get_effective_viscosity(i, j - 1));
+                    double flux_s_neighbor = nu_eff_s_face * (u_old(i, j) - u_old(i, j - 1)) / dy; 
+                    d2udy2_final_term = (flux_n_wall - flux_s_neighbor) / dy; 
+                    y_term_includes_nu_eff = true;
+                } else { 
+                    double u_jp1_boundary = 0.0; // Для ламинарного SOLID - как стенка
+                    double u_jm1_neighbor = u_old(i, j - 1);
+                    d2udy2_final_term = (u_jp1_boundary + u_jm1_neighbor - 2.0 * u_old(i, j)) / dy2;
                 }
             }
-            // Нижний сосед j-1
-            else if (j - 1 <= 0 || tags(i, j - 1) == CellTag::SOLID) { // Нижняя стенка (граница или SOLID)
+            else if (is_bottom_channel_boundary_for_logic) { 
+                double u_jp1_neighbor = u_old(i, j + 1);
+                double u_jm1_boundary = 0.0; 
+                d2udy2_final_term = (u_jp1_neighbor + u_jm1_boundary - 2.0 * u_old(i, j)) / dy2;
+            }
+            else if (solid_obstacle_below) { 
                 if (turbulent && turb_model_ptr) {
                     std::pair<double, double> tau_w_pair = turb_model_ptr->get_wall_shear_stress(i, j, BoundarySide::BOTTOM);
-                    double flux_s = tau_w_pair.first / rho_;
-                    // Поток через северную грань (j+1/2) - стандартный
-                    double nu_eff_n = 0.5 * (nu_eff_ij + get_effective_viscosity(i, j + 1)); // Сосед j+1 точно FLUID
-                    double flux_n = -nu_eff_n * (u_old(i, j + 1) - u_old(i, j)) / dy;
-                    d2udy2 = (flux_n - flux_s) / dy;
-                } else { // Ламинарный: u=0 на стенке
-                    u_jp1 = u_old(i, j + 1); // Сосед сверху точно FLUID
-                    u_jm1 = 0.0; // Значение НА стенке
-                    d2udy2 = (u_jp1 + u_jm1 - 2.0 * u_old(i, j)) / dy2;
+                    double flux_s_wall = tau_w_pair.first / rho_;
+                    double nu_eff_n_face = 0.5 * (nu_eff_ij + get_effective_viscosity(i, j + 1));
+                    double flux_n_neighbor = nu_eff_n_face * (u_old(i, j + 1) - u_old(i, j)) / dy; 
+                    d2udy2_final_term = (flux_n_neighbor - flux_s_wall) / dy;
+                    y_term_includes_nu_eff = true;
+                } else { 
+                    double u_jp1_neighbor = u_old(i, j + 1);
+                    double u_jm1_boundary = 0.0; 
+                    d2udy2_final_term = (u_jp1_neighbor + u_jm1_boundary - 2.0 * u_old(i, j)) / dy2;
                 }
             }
-            // Полностью внутренняя ячейка по Y (и не рядом с SOLID по Y)
-            else {
-                u_jp1 = u_old(i, j + 1);
-                u_jm1 = u_old(i, j - 1);
-                d2udy2 = (u_jp1 + u_jm1 - 2.0 * u_old(i, j)) / dy2;
+            else { 
+                d2udy2_final_term = (u_old(i, j + 1) + u_old(i, j - 1) - 2.0 * u_old(i, j)) / dy2;
             }
 
             // Собираем Лапласиан
-            // Для турбулентного режима у стенки d2udy2 уже содержит nu_eff (через поток/tau_w)
-            // Для ламинарного - нет. Нужно умножить на nu_eff = nu_molecular_
-            if (turbulent && turb_model_ptr && (j==1 || j==ny-2 || tags(i,j-1)==CellTag::SOLID || tags(i,j+1)==CellTag::SOLID)) {
-                 // В турбулентном режиме у стенки Y-диффузия уже посчитана как (Fn-Fs)/dy
-                 // Нужно добавить X-диффузию, умноженную на nu_eff
-                 lap_ij = nu_eff_ij * d2udx2 + d2udy2;
-            } else {
-                 // В ламинарном режиме ИЛИ вдали от стенок в турбулентном - стандартный Лапласиан * nu_eff
-                 lap_ij = nu_eff_ij * (d2udx2 + d2udy2);
+            if (y_term_includes_nu_eff) { 
+                 lap_ij = nu_eff_ij * d2udx2_simple + d2udy2_final_term;
+            } else { 
+                 lap_ij = nu_eff_ij * (d2udx2_simple + d2udy2_final_term);
             }
-
-
-            // Обновление u_star_ явным Эйлером
-            // f_new = f_old + dt * Div(nu_eff * Grad(f_old)) = f_old + dt * lap_ij
+            
             u_star_(i, j) = u_old(i, j) + dt * lap_ij;
-
-        } // end for i
-    } // end for j
-
-    // Принудительное применение ГУ Дирихле к u_star_ ПОСЛЕ диффузии
-    apply_bc(); // Вызовем apply_bc еще раз, он обнулит u на стенках и у SOLID
-                // и применит ГУ Неймана на выходе.
-                // Это перезапишет некоторые значения u_star_ после диффузии,
-                // обеспечивая точное выполнение ГУ перед проекцией.
+        }
+    } 
+    apply_bc(); 
 }
+
+// В src/solvers/velocity_pressure/VelocityPressureSolver.cpp
 
 void VelocityPressureSolver::diffuse_v(double dt) {
     const auto nx = geom_.mesh().nx();
@@ -275,97 +275,120 @@ void VelocityPressureSolver::diffuse_v(double dt) {
 
     Field2D<double> v_old = v_star_;
 
-    bool turbulent = (turbulence_model_ != nullptr);
-    TurbulenceModel* turb_model_ptr = getTurbulenceModel();
+    bool turbulent = (this->turbulence_model_ != nullptr);
+    TurbulenceModel* turb_model_ptr = this->getTurbulenceModel();
 
     for (std::size_t j = 1; j < ny - 1; ++j) {
-         for (std::size_t i = 1; i < nx - 1; ++i) {
-             if (tags(i, j) == CellTag::SOLID) {
-                 v_star_(i, j) = 0.0;
-                 continue;
-             }
+        for (std::size_t i = 1; i < nx - 1; ++i) {
+            if (tags(i, j) == CellTag::SOLID) {
+                v_star_(i, j) = 0.0;
+                continue;
+            }
 
-             double nu_eff_ij = get_effective_viscosity(i, j);
-             if (nu_eff_ij < 1e-12) continue;
+            double nu_eff_ij = get_effective_viscosity(i, j);
+            if (nu_eff_ij < 1e-12) continue;
 
-             double lap_ij = 0.0;
-             double d2vdx2 = 0.0;
-             double d2vdy2 = 0.0;
+            double lap_ij = 0.0;
 
-             // X-производные (вертикальные стенки - SOLID)
-             double v_ip1, v_im1;
-             if (i + 1 >= nx - 1 || tags(i + 1, j) == CellTag::SOLID) { // SOLID справа или выход
-                  if (tags(i + 1, j) == CellTag::SOLID) { // SOLID
-                     if (turbulent && turb_model_ptr) { // Турбулентный SOLID
-                         std::pair<double, double> tau_w_pair = turb_model_ptr->get_wall_shear_stress(i, j, BoundarySide::RIGHT);
-                         double flux_e = tau_w_pair.second / rho_; // tau_wy
-                         // Западный поток
-                         double nu_eff_w = 0.5 * (nu_eff_ij + get_effective_viscosity(i - 1, j)); // i-1 точно FLUID
-                         double flux_w = -nu_eff_w * (v_old(i, j) - v_old(i - 1, j)) / dx;
-                         d2vdx2 = (flux_e - flux_w) / dx;
-                     } else { // Ламинарный SOLID
-                         v_ip1 = 0.0; // v=0 на стенке
-                         v_im1 = v_old(i - 1, j);
-                         d2vdx2 = (v_ip1 + v_im1 - 2.0 * v_old(i, j)) / dx2;
-                     }
-                 } else { // Выход (i = nx-1) - Нейман для v => dv/dx=0
-                     v_ip1 = v_old(i, j);
-                     v_im1 = v_old(i - 1, j);
-                     d2vdx2 = (v_ip1 + v_im1 - 2.0 * v_old(i, j)) / dx2; // d2vdx2=0 ? Нет.
-                     // Правильнее поток flux_e = 0
-                     double nu_eff_w = 0.5 * (nu_eff_ij + get_effective_viscosity(i - 1, j));
-                     double flux_w = -nu_eff_w * (v_old(i, j) - v_old(i - 1, j)) / dx;
-                     d2vdx2 = (0.0 - flux_w) / dx;
-                 }
-             } else if (i - 1 <= 0 || tags(i - 1, j) == CellTag::SOLID) { // SOLID слева или вход
-                  if (tags(i - 1, j) == CellTag::SOLID) { // SOLID слева
-                      if (turbulent && turb_model_ptr) {
-                          std::pair<double, double> tau_w_pair = turb_model_ptr->get_wall_shear_stress(i, j, BoundarySide::LEFT);
-                          double flux_w = tau_w_pair.second / rho_; // tau_wy
-                          // Восточный поток
-                          double nu_eff_e = 0.5 * (nu_eff_ij + get_effective_viscosity(i + 1, j)); // i+1 точно FLUID
-                          double flux_e = -nu_eff_e * (v_old(i + 1, j) - v_old(i, j)) / dx;
-                          d2vdx2 = (flux_e - flux_w) / dx;
-                      } else { // Ламинарный SOLID
-                          v_im1 = 0.0; // v=0 на стенке
-                          v_ip1 = v_old(i + 1, j);
-                          d2vdx2 = (v_ip1 + v_im1 - 2.0 * v_old(i, j)) / dx2;
-                      }
-                  } else { // Вход (i = 0) - v=0 (Дирихле)
-                       v_im1 = 0.0;
-                       v_ip1 = v_old(i + 1, j);
-                       d2vdx2 = (v_ip1 + v_im1 - 2.0 * v_old(i, j)) / dx2; // Используем v=0 на входе
-                  }
-             } else { // Полностью внутренняя ячейка по X
-                 v_ip1 = v_old(i + 1, j);
-                 v_im1 = v_old(i - 1, j);
-                 d2vdx2 = (v_ip1 + v_im1 - 2.0 * v_old(i, j)) / dx2;
-             }
+            // --- X-компонента Лапласиана (d2vdx2_term) ---
+            double d2vdx2_term;
+            bool x_term_is_flux_based = false;
 
-             // Y-производные (горизонтальные стенки трубы - v=0 всегда)
-             double v_jp1 = (j + 1 >= ny - 1 || tags(i, j + 1) == CellTag::SOLID) ? -v_old(i, j) // v=0 ghost cell
-                            : v_old(i, j + 1);
-             double v_jm1 = (j - 1 <= 0    || tags(i, j - 1) == CellTag::SOLID) ? -v_old(i, j) // v=0 ghost cell
-                            : v_old(i, j - 1);
-             d2vdy2 = (v_jp1 + v_jm1 - 2.0 * v_old(i, j)) / dy2;
+            // Определяем, примыкает ли ячейка (i,j) к ВНУТРЕННЕМУ SOLID препятствию слева или справа
+            // (не к границам области i=0 или i=nx-1)
+            bool solid_right = (i + 1 < nx - 1) && (tags(i + 1, j) == CellTag::SOLID);
+            bool solid_left  = (i - 1 > 0)      && (tags(i - 1, j) == CellTag::SOLID);
 
-             // Собираем Лапласиан
-             if (turbulent && turb_model_ptr && (tags(i+1,j)==CellTag::SOLID || tags(i-1,j)==CellTag::SOLID) ) {
-                 // Если у верт. стенки в турб. режиме, d2vdx2 уже посчитан через поток/tau_w
-                 lap_ij = d2vdx2 + nu_eff_ij * d2vdy2;
-             } else {
-                 // Иначе стандартный Лапласиан * nu_eff
-                  lap_ij = nu_eff_ij * (d2vdx2 + d2vdy2);
-             }
+            if (solid_right) { // Внутреннее SOLID препятствие справа
+                if (turbulent && turb_model_ptr) {
+                    std::pair<double, double> tau_w_pair = turb_model_ptr->get_wall_shear_stress(i, j, BoundarySide::RIGHT);
+                    double flux_e_wall = tau_w_pair.second / rho_; // Поток v через правую грань (стенка)
+                    
+                    // Поток через левую грань (w, i-1/2) - стандартный (сосед (i-1,j) не может быть SOLID, т.к. solid_left было бы true)
+                    // Если i-1 == 0 (вход), то v_old(0,j) = 0.
+                    double nu_eff_w_face = 0.5 * (nu_eff_ij + get_effective_viscosity(i - 1, j));
+                    double flux_w_neighbor = nu_eff_w_face * (v_old(i, j) - v_old(i - 1, j)) / dx;
+                    
+                    d2vdx2_term = (flux_e_wall - flux_w_neighbor) / dx;
+                    x_term_is_flux_based = true;
+                } else { // Ламинарный SOLID справа
+                    double v_ip1_eff = -v_old(i,j); // v=0 на SOLID
+                    double v_im1_eff = v_old(i-1,j); // Сосед слева (может быть вход i-1=0, где v=0)
+                    d2vdx2_term = (v_ip1_eff + v_im1_eff - 2.0 * v_old(i,j)) / dx2;
+                }
+            } else if (solid_left) { // Внутреннее SOLID препятствие слева
+                if (turbulent && turb_model_ptr) {
+                    std::pair<double, double> tau_w_pair = turb_model_ptr->get_wall_shear_stress(i, j, BoundarySide::LEFT);
+                    double flux_w_wall = tau_w_pair.second / rho_; // Поток v через левую грань (стенка)
+
+                    // Поток через правую грань (e, i+1/2) - стандартный (сосед (i+1,j) не может быть SOLID)
+                    // Если i+1 == nx-1 (выход), то Нейман.
+                    double v_ip1_eff_for_flux_e;
+                    if (i + 1 == nx -1) { // Сосед справа - выходная граница
+                        v_ip1_eff_for_flux_e = v_old(i,j); // Для Неймана dv/dx=0 => v(N)=v(N-1)
+                    } else {
+                        v_ip1_eff_for_flux_e = v_old(i+1,j);
+                    }
+                    double nu_eff_e_face = 0.5 * (nu_eff_ij + get_effective_viscosity(i + 1, j));
+                    double flux_e_neighbor = nu_eff_e_face * (v_ip1_eff_for_flux_e - v_old(i, j)) / dx;
+
+                    d2vdx2_term = (flux_e_neighbor - flux_w_wall) / dx;
+                    x_term_is_flux_based = true;
+                } else { // Ламинарный SOLID слева
+                    double v_im1_eff = -v_old(i,j); // v=0 на SOLID
+                    double v_ip1_eff = v_old(i+1,j); // Сосед справа (может быть выход i+1=nx-1)
+                    if (i + 1 == nx - 1) v_ip1_eff = v_old(i,j); // Учет Неймана на выходе
+                    d2vdx2_term = (v_ip1_eff + v_im1_eff - 2.0 * v_old(i,j)) / dx2;
+                }
+            } 
+            // Границы области i=0 (вход) и i=nx-1 (выход), если нет SOLID препятствий рядом
+            else if (i == 1) { // Ячейка (1,j) примыкает к входу (0,j)
+                double v_im1_eff = v_old(0,j); // v=0 на входе (Дирихле)
+                double v_ip1_eff = v_old(i+1,j); // Сосед (2,j)
+                d2vdx2_term = (v_ip1_eff + v_im1_eff - 2.0 * v_old(i,j)) / dx2;
+            } else if (i == nx - 2) { // Ячейка (nx-2,j) примыкает к выходу (nx-1,j)
+                // Нейман dv/dx=0 => v(nx-1,j) = v(nx-2,j)
+                double v_ip1_eff = v_old(i,j); // v(nx-1) = v(nx-2)
+                double v_im1_eff = v_old(i-1,j); // Сосед (nx-3,j)
+                d2vdx2_term = (v_ip1_eff + v_im1_eff - 2.0 * v_old(i,j)) / dx2;
+            }
+            // Полностью внутренняя жидкая ячейка по X
+            else {
+                d2vdx2_term = (v_old(i + 1, j) + v_old(i - 1, j) - 2.0 * v_old(i, j)) / dx2;
+            }
 
 
-             // Обновление v_star_ явным Эйлером
-             v_star_(i, j) = v_old(i, j) + dt * lap_ij;
-         } // end for i
-    } // end for j
+            // --- Y-компонента Лапласиана (d2vdy2_term) ---
+            // Для v-компоненты на горизонтальных стенках (внешних или SOLID) всегда v=0 (непротекание).
+            // get_wall_shear_stress() НЕ используется.
+            double v_jp1_eff, v_jm1_eff;
 
-    // Принудительное применение ГУ к v_star_ ПОСЛЕ диффузии
-    apply_bc(); // Повторный вызов применит v=0 на стенках/SOLID и Нейман на выходе
+            // Сосед сверху (j+1)
+            if (j + 1 == ny - 1 || tags(i, j + 1) == CellTag::SOLID) { // Верхняя стенка (граница или SOLID)
+                v_jp1_eff = -v_old(i,j); // v=0 на стенке -> фиктивная ячейка
+            } else {
+                v_jp1_eff = v_old(i,j+1);
+            }
+            // Сосед снизу (j-1)
+            if (j - 1 == 0 || tags(i, j - 1) == CellTag::SOLID) { // Нижняя стенка (граница или SOLID)
+                v_jm1_eff = -v_old(i,j); // v=0 на стенке -> фиктивная ячейка
+            } else {
+                v_jm1_eff = v_old(i,j-1);
+            }
+            double d2vdy2_simple = (v_jp1_eff + v_jm1_eff - 2.0 * v_old(i,j)) / dy2;
+
+
+            // Собираем Лапласиан
+            if (x_term_is_flux_based) { // Если X-компонента была от турбулентной SOLID стенки
+                 lap_ij = d2vdx2_term + nu_eff_ij * d2vdy2_simple; 
+            } else { // Все остальное (ламинарный, или турбулентный без вертикальных SOLID стенок рядом)
+                 lap_ij = nu_eff_ij * (d2vdx2_term + d2vdy2_simple);
+            }
+            
+            v_star_(i, j) = v_old(i, j) + dt * lap_ij;
+        } 
+    } 
+    apply_bc(); 
 }
 
 void VelocityPressureSolver::calculatePoissonRHS_RhieChow(Field2D<double>& rhs, double dt)
