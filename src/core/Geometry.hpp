@@ -12,7 +12,7 @@ public:
 
     void add_rectangle(std::size_t i0, std::size_t j0,
                        std::size_t i1, std::size_t j1);
-
+    void add_circle(int center_i_idx, int center_j_idx, double radius_phys);
     const Mesh2D&           mesh() const noexcept { return mesh_; }
     const Field2D<CellTag>& tags() const noexcept { return tags_; }
 

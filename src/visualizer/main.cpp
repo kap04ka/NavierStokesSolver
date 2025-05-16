@@ -16,9 +16,47 @@
 #include <string>
 #include <iomanip> // Для std::fixed, std::setprecision
 #include <memory>  // Для std::unique_ptr
+#include <variant>
+#include <vector>
 
 // Тип решателя
 enum class SolverChoice { VelocityPressure, VorticityStreamfunction };
+
+enum class ObstacleType { Rectangle, Circle };
+
+const char* ObstacleTypeToString(ObstacleType type) {
+    switch (type) {
+        case ObstacleType::Rectangle: return "Rectangle";
+        case ObstacleType::Circle:    return "Circle";
+        default:                      return "Unknown";
+    }
+}
+
+struct RectangleObstacleParams {
+    int i0 = 10, j0 = 10;
+    int i1 = 20, j1 = 20;
+};
+
+struct CircleObstacleParams {
+    int center_i = 0;      // Индекс i центра круга
+    int center_j = 0;      // Индекс j центра круга
+    double radius_phys = 0.0;  // Радиус в физ. единицах
+};;
+
+struct ObstacleConfig {
+    ObstacleType type;
+    std::variant<RectangleObstacleParams, CircleObstacleParams> params;
+    bool enabled = true;
+    std::string name;
+
+    int imgui_id; 
+    static int next_imgui_id;
+
+    ObstacleConfig(ObstacleType t, decltype(params) p, std::string n = "") 
+        : type(t), params(std::move(p)), enabled(true), name(std::move(n)), imgui_id(next_imgui_id++) {}
+};
+int ObstacleConfig::next_imgui_id = 0; // Статический член для уникальных ID
+
 
 // Обновленная конфигурация симуляции
 struct SimulationConfig {
@@ -29,9 +67,7 @@ struct SimulationConfig {
     double Ly = 0.5;
 
     // Препятствие
-    bool useObstacle = true;
-    int obs_i0 = 20, obs_j0 = 10; 
-    int obs_i1 = 40, obs_j1 = 20; 
+    std::vector<ObstacleConfig> obstacles;
 
     // Физические свойства
     double rho = 1.0;
@@ -58,6 +94,10 @@ struct SimulationConfig {
     int turbulenceChoice = static_cast<int>(cfd::TurbulenceModelType::None); // 0=None, 1=KEpsilon
     double inletTurbIntensity = 0.05;
     double inletLengthScaleFactor = 0.07;
+
+    SimulationConfig() {
+        ObstacleConfig::next_imgui_id = 0; // Сбрасываем счетчик ID при создании новой конфигурации
+    }
 };
 
 
@@ -101,25 +141,12 @@ int main() {
         ImGui::RadioButton("Velocity-Pressure", reinterpret_cast<int*>(&cfg.solverType), static_cast<int>(SolverChoice::VelocityPressure)); ImGui::SameLine();
         ImGui::RadioButton("Vorticity-Streamfunction", reinterpret_cast<int*>(&cfg.solverType), static_cast<int>(SolverChoice::VorticityStreamfunction));
         
-        
-        if (cfg.solverType == SolverChoice::VelocityPressure) {
-            // Можно установить дефолтный CFL для VP, если он отличается
-            // cfg.cfl = 0.4; // Пример
-        } else {
-            // cfg.cfl = 0.5; // Пример дефолта для VS
-        }
         ImGui::Separator();
 
         ImGui::InputInt("NX (Grid Cells X)", &cfg.NX);
         ImGui::InputInt("NY (Grid Cells Y)", &cfg.NY);
         ImGui::InputDouble("Lx (Domain Length)", &cfg.Lx);
         ImGui::InputDouble("Ly (Domain Height)", &cfg.Ly);
-        ImGui::Separator();
-        ImGui::Checkbox("Use Obstacle", &cfg.useObstacle);
-        if (cfg.useObstacle) {
-            ImGui::InputInt("Obstacle i0", &cfg.obs_i0); ImGui::InputInt("Obstacle j0", &cfg.obs_j0);
-            ImGui::InputInt("Obstacle i1", &cfg.obs_i1); ImGui::InputInt("Obstacle j1", &cfg.obs_j1);
-        }
         ImGui::Separator();
         ImGui::InputDouble("rho (Density)", &cfg.rho);
         ImGui::InputDouble("nu (Kinematic Viscosity)", &cfg.nu, 0.0, 0.0, "%.1e");
@@ -154,6 +181,104 @@ int main() {
         }
 
         ImGui::Separator();
+        ImGui::Text("Obstacles Configuration");
+
+        // Кнопка для открытия модального окна добавления препятствия
+        if (ImGui::Button("Add New Obstacle")) {
+            ImGui::OpenPopup("AddObstacleTypePopup");
+        }
+
+        // Модальное окно для выбора типа нового препятствия
+        if (ImGui::BeginPopupModal("AddObstacleTypePopup", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("Select obstacle type to add:");
+            // Статическая переменная для хранения выбора в модальном окне
+            static ObstacleType selected_new_obstacle_type = ObstacleType::Rectangle; 
+            
+            ImGui::RadioButton("Rectangle##AddType", reinterpret_cast<int*>(&selected_new_obstacle_type), static_cast<int>(ObstacleType::Rectangle));
+            ImGui::RadioButton("Circle##AddType",    reinterpret_cast<int*>(&selected_new_obstacle_type), static_cast<int>(ObstacleType::Circle));
+            // Сюда можно будет добавить другие типы препятствий в будущем
+
+            ImGui::Separator();
+            if (ImGui::Button("Add This Type", ImVec2(150, 0))) {
+                std::string new_obs_name;
+                if (selected_new_obstacle_type == ObstacleType::Rectangle) {
+                    new_obs_name = "Rectangle " + std::to_string(cfg.obstacles.size() + 1);
+                    cfg.obstacles.emplace_back(
+                        ObstacleType::Rectangle, 
+                        RectangleObstacleParams{cfg.NX/4, cfg.NY/4, cfg.NX/4+10, cfg.NY/4+10}, 
+                        new_obs_name
+                    );
+                } else if (selected_new_obstacle_type == ObstacleType::Circle) {
+                    new_obs_name = "Circle " + std::to_string(cfg.obstacles.size() + 1);
+                    // Параметры по умолчанию для круга: центр в (NX/2, NY/2), радиус = Ly/10
+                    cfg.obstacles.emplace_back(
+                        ObstacleType::Circle, 
+                        CircleObstacleParams{cfg.NX/2, cfg.NY/2, cfg.Ly/10.0}, 
+                        new_obs_name
+                    );
+                }
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        ImGui::Spacing();
+
+                // Отображаем список препятствий и даем возможность удалить любое
+                int obstacle_to_remove_idx = -1; // Индекс препятствия для удаления
+                for (int k = 0; k < static_cast<int>(cfg.obstacles.size()); ++k) { // Используем int для k для сравнения с obstacle_to_remove_idx
+                    ObstacleConfig& obs_cfg_ref = cfg.obstacles[k]; // Берем ссылку для модификации имени
+        
+                    ImGui::PushID(obs_cfg_ref.imgui_id); // Используем уникальный ID для каждого препятствия
+        
+                    // Имя препятствия (можно редактировать)
+                    char name_buf[128]; // Буфер для имени
+                    strncpy(name_buf, obs_cfg_ref.name.c_str(), sizeof(name_buf) - 1);
+                    name_buf[sizeof(name_buf) - 1] = '\0'; // Гарантируем нуль-терминацию
+                    if (ImGui::InputText("##ObsName", name_buf, sizeof(name_buf))) {
+                        obs_cfg_ref.name = name_buf;
+                    }
+        
+                    ImGui::SameLine();
+                    ImGui::Text("(%s)", ObstacleTypeToString(obs_cfg_ref.type)); // Показываем тип
+        
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 100); // Кнопка удаления справа
+                    if (ImGui::Button("Remove")) {
+                        obstacle_to_remove_idx = k;
+                    }
+                    
+                    ImGui::Checkbox("Enabled", &obs_cfg_ref.enabled);
+        
+                    if (obs_cfg_ref.enabled) {
+                        // Используем std::visit для отображения параметров в зависимости от типа
+                        std::visit([&](auto& params) { // params здесь auto&, т.к. мы можем их менять через UI
+                            using T_params = std::decay_t<decltype(params)>; // Получаем чистый тип
+        
+                            if constexpr (std::is_same_v<T_params, RectangleObstacleParams>) {
+                                ImGui::InputInt("i0", &params.i0); ImGui::InputInt("j0", &params.j0);
+                                ImGui::InputInt("i1", &params.i1); ImGui::InputInt("j1", &params.j1);
+                            } else if constexpr (std::is_same_v<T_params, CircleObstacleParams>) {
+                                // Параметры для круга: центр в индексах, радиус физический
+                                ImGui::InputInt("Center i", &params.center_i); 
+                                ImGui::InputInt("Center j", &params.center_j);
+                                ImGui::InputDouble("Radius (physical units)", &params.radius_phys, 0.0, 0.0, "%.4f");
+                            }
+                            // Сюда можно будет добавить else if для других типов препятствий
+                        }, obs_cfg_ref.params);
+                    }
+                    ImGui::Separator();
+                    ImGui::PopID();
+                }
+        
+                if (obstacle_to_remove_idx != -1) {
+                    cfg.obstacles.erase(cfg.obstacles.begin() + obstacle_to_remove_idx);
+                }
+
+        ImGui::Separator();
         if (ImGui::Button("Start Simulation")) { started = true; }
         ImGui::End();
 
@@ -181,16 +306,59 @@ int main() {
     std::cout << " Re = " << (cfg.umax * cfg.Ly / cfg.nu) << " (based on L=Ly, U=umax)" << std::endl; // cfg.Ly более характерный размер
     
     cfd::Geometry geom(cfg.NX, cfg.NY, cfg.Lx, cfg.Ly);
-    if (cfg.useObstacle) {
-        cfg.obs_i0 = std::max(0, std::min(cfg.NX - 1, cfg.obs_i0));
-        cfg.obs_i1 = std::max(cfg.obs_i0, std::min(cfg.NX - 1, cfg.obs_i1));
-        cfg.obs_j0 = std::max(0, std::min(cfg.NY - 1, cfg.obs_j0));
-        cfg.obs_j1 = std::max(cfg.obs_j0, std::min(cfg.NY - 1, cfg.obs_j1));
-        if (cfg.obs_i0 < cfg.obs_i1 && cfg.obs_j0 < cfg.obs_j1) { // Условие, что i0<i1, j0<j1
-             geom.add_rectangle(cfg.obs_i0, cfg.obs_j0, cfg.obs_i1, cfg.obs_j1);
-             std::cout << " Obstacle: i=[" << cfg.obs_i0 << "," << cfg.obs_i1 << "], j=[" << cfg.obs_j0 << "," << cfg.obs_j1 << "]" << std::endl;
+    std::cout << "Processing " << cfg.obstacles.size() << " defined obstacle(s)..." << std::endl;
+    for (const auto& obs_config_item : cfg.obstacles) { // Изменил имя переменной цикла для ясности
+        if (obs_config_item.enabled) {
+            // Используем obs_config_item.user_name, как определено в ObstacleConfig
+            std::cout << "  Obstacle Name: " << (obs_config_item.name.empty() ? "(unnamed)" : obs_config_item.name.c_str()) 
+                      << ", Type: " << ObstacleTypeToString(obs_config_item.type) << std::endl;
+
+            std::visit([&](const auto& params) { 
+                using T_params = std::decay_t<decltype(params)>;
+                if constexpr (std::is_same_v<T_params, RectangleObstacleParams>) {
+                    // Валидация координат прямоугольника
+                    int i0 = std::max(0, std::min(cfg.NX - 1, params.i0));
+                    int i1 = std::max(i0, std::min(cfg.NX - 1, params.i1)); 
+                    int j0 = std::max(0, std::min(cfg.NY - 1, params.j0));
+                    int j1 = std::max(j0, std::min(cfg.NY - 1, params.j1)); 
+
+                    // geom.add_rectangle ожидает i0,j0 (включительно) и i1,j1 (включительно)
+                    // Убедимся, что i0 <= i1 и j0 <= j1 (для add_rectangle это нормально, если i0=i1 - линия)
+                    // Но для физического препятствия лучше i0 < i1 и j0 < j1
+                    if (i0 < i1 && j0 < j1) { // Препятствие должно иметь хотя бы 1x1 внутреннюю ячейку (т.е. 2x2 по индексам)
+                                              // Или, если i0=i1, то это вертикальная линия толщиной в одну ячейку.
+                                              // geom.add_rectangle(i0,j0,i1,j1) обработает это.
+                         geom.add_rectangle(static_cast<std::size_t>(i0), 
+                                            static_cast<std::size_t>(j0), 
+                                            static_cast<std::size_t>(i1), 
+                                            static_cast<std::size_t>(j1));
+                         std::cout << "    Added Rectangle: i=[" << i0 << "," << i1 
+                                   << "], j=[" << j0 << "," << j1 << "]" << std::endl;
+                    } else {
+                        std::cout << "    Warning: Rectangle with invalid/degenerate dimensions (i0="<<i0<<", i1="<<i1<<", j0="<<j0<<", j1="<<j1<<") not added or will be a line/point." << std::endl;
+                    }
+                } else if constexpr (std::is_same_v<T_params, CircleObstacleParams>) {
+                    if (params.radius_phys > 1e-9) { // Проверка на положительный радиус
+                        // Проверка, что центр круга (в индексах) внутри сетки
+                        if (params.center_i >= 0 && params.center_i < cfg.NX &&
+                            params.center_j >= 0 && params.center_j < cfg.NY) {
+                            geom.add_circle(params.center_i, 
+                                            params.center_j, 
+                                            params.radius_phys);
+                            std::cout << "    Added Circle: center_cell_idx=(" << params.center_i 
+                                      << "," << params.center_j << "), R_phys=" << params.radius_phys << std::endl;
+                        } else {
+                            std::cout << "    Warning: Circle center indices (" << params.center_i << "," << params.center_j 
+                                      << ") are outside mesh bounds [" << cfg.NX << "," << cfg.NY << "]. Circle not added." << std::endl;
+                        }
+                    } else {
+                         std::cout << "    Warning: Circle with zero/negative radius (" << params.radius_phys << ") not added." << std::endl;
+                    }
+                }
+            }, obs_config_item.params);
         } else {
-            std::cout << "Warning: Invalid obstacle indices, obstacle not added." << std::endl;
+            std::cout << "  Obstacle Name: " << (obs_config_item.name.empty() ? "(unnamed)" : obs_config_item.name.c_str()) 
+                      << " (Type: " << ObstacleTypeToString(obs_config_item.type) << ") - Disabled." << std::endl;
         }
     }
 
