@@ -390,15 +390,16 @@ int main() {
 
     cfd::Field2D<double> u_buffer(geom.mesh().nx(), geom.mesh().ny());
     cfd::Field2D<double> v_buffer(geom.mesh().nx(), geom.mesh().ny());
-    cfd::Field2D<double> p_buffer(geom.mesh().nx(), geom.mesh().ny(), 0.0); // Для VP, или dummy для VS
+    cfd::Field2D<double> scalar_buffer_for_vis(geom.mesh().nx(), geom.mesh().ny(), 0.0); // Для VP, или dummy для VS
 
     if (vp_solver_raw_ptr) {
         u_buffer = vp_solver_raw_ptr->u();
         v_buffer = vp_solver_raw_ptr->v();
-        p_buffer = vp_solver_raw_ptr->p();
+        scalar_buffer_for_vis = vp_solver_raw_ptr->p();
     } else if (vs_solver_raw_ptr) {
         u_buffer = vs_solver_raw_ptr->u_velocity_from_psi();
         v_buffer = vs_solver_raw_ptr->v_velocity_from_psi();
+        scalar_buffer_for_vis = vs_solver_raw_ptr->streamfunction();
     }
     
     cfd::SolverMonitorInfo      shared_vp_monitor_info; // Для VP
@@ -420,13 +421,13 @@ int main() {
                 if (vp_solver_raw_ptr) {
                     u_buffer = vp_solver_raw_ptr->u();
                     v_buffer = vp_solver_raw_ptr->v();
-                    p_buffer = vp_solver_raw_ptr->p();
+                    scalar_buffer_for_vis = vp_solver_raw_ptr->p();
                     shared_vp_monitor_info = vp_solver_raw_ptr->getMonitorInfo();
                     last_actual_dt_shared = shared_vp_monitor_info.actualDt;
                 } else if (vs_solver_raw_ptr) {
                     u_buffer = vs_solver_raw_ptr->u_velocity_from_psi();
                     v_buffer = vs_solver_raw_ptr->v_velocity_from_psi();
-                    // p_buffer не обновляется, остается dummy
+                    scalar_buffer_for_vis = vs_solver_raw_ptr->streamfunction();
                     shared_vs_monitor_info = vs_solver_raw_ptr->getMonitorInfo();
                     last_actual_dt_shared = shared_vs_monitor_info.actualDt;
                 }
@@ -453,7 +454,18 @@ int main() {
         std::cout << "Simulation thread finished. Total time: " << simulationTime << "s, Steps: " << stepCount << std::endl;
     });
 
-    FlowVisualizer vis(geom, u_buffer, v_buffer, p_buffer, geom.tags());
+    FlowVisualizer vis(geom, u_buffer, v_buffer, scalar_buffer_for_vis, geom.tags());
+
+    if (cfg.solverType == SolverChoice::VorticityStreamfunction) {
+        vis.showPressure_ = false;    // Давление не рисуем
+        vis.showStreamlines_ = false;  // Линии тока включаем по умолчанию для VS
+        vis.showVelocity_ = true;    // Скорости выключаем, чтобы не мешали линиям тока
+    } else { // VelocityPressure
+        vis.showPressure_ = true;     // Давление включаем по умолчанию для VP
+        vis.showStreamlines_ = false; // Линии тока не рисуем (пока)
+        vis.showVelocity_ = true;     // Скорости включаем
+    }
+
     int winWidth = std::max(600, std::min(1600, cfg.NX * 8)); 
     int winHeight = std::max(400, std::min(1000, cfg.NY * 8));
     if (!vis.init(winWidth, winHeight, "CFD Visualization")) {
@@ -530,10 +542,11 @@ int main() {
 
         ImGui::Begin("Visualization Settings");
         ImGui::Checkbox("Show Velocity Vectors", &vis.showVelocity_);
+
         if (cfg.solverType == SolverChoice::VelocityPressure) {
             ImGui::Checkbox("Show Pressure Field", &vis.showPressure_);
         } else {
-            ImGui::TextDisabled("Pressure field not computed by VS solver.");
+            ImGui::Checkbox("Show Streamfunction lines", &vis.showStreamlines_);
         }
         
         if (vis.showVelocity_) {
@@ -544,13 +557,13 @@ int main() {
             ImGui::Separator();
         }
         if (cfg.solverType == SolverChoice::VelocityPressure && vis.showPressure_) {
-            // Обновление диапазона давления теперь в FlowVisualizer::renderOpenGLScene -> calculatePressureRange
-            // if (ImGui::Button("Recalculate Pressure Range")) {
-            //     vis.calculatePressureRange(); // Вызываем метод напрямую, если он публичный
-            // }
-             ImGui::Text("Pressure Min: %.3f", vis.minPressure_); 
-             ImGui::Text("Pressure Max: %.3f", vis.maxPressure_);
+             ImGui::Text("Pressure Min: %.3f", vis.minScalarValue_); 
+             ImGui::Text("Pressure Max: %.3f", vis.maxScalarValue_);
+        } else if (cfg.solverType == SolverChoice::VorticityStreamfunction && vis.showStreamlines_) {
+            ImGui::SliderInt("Num Streamline Levels", &vis.numStreamlineLevels_, 3, 50);
+            ImGui::SliderFloat("Streamline Thickness", &vis.streamlineThickness_, 0.5f, 5.0f);
         }
+
         ImGui::End();
 
         int display_w, display_h;
@@ -559,16 +572,7 @@ int main() {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        bool old_show_pressure_state = vis.showPressure_; // Сохраняем состояние чекбокса от VP
-        if (cfg.solverType == SolverChoice::VorticityStreamfunction) {
-            vis.showPressure_ = false; // Принудительно выключаем для VS перед рендерингом
-        }
-
         vis.renderOpenGLScene(); 
-
-        if (cfg.solverType == SolverChoice::VorticityStreamfunction) {
-            vis.showPressure_ = old_show_pressure_state; // Восстанавливаем (хотя чекбокс скрыт, это для чистоты)
-        }
         
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
