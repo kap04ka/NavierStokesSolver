@@ -3,7 +3,7 @@
 #include "solvers/base/Solver.hpp"
 #include "core/Field2D.hpp"
 #include "core/CellTag.hpp"
-#include "math/PoissonSolver.hpp" 
+#include "math/PoissonSolverDyn.hpp" 
 #include "turbulence/base/TurbulenceModel.hpp"
 #include <vector> 
 #include <utility> // Для std::pair
@@ -34,6 +34,7 @@ public:
         double inlet_turb_intensity,
         double inlet_length_scale_factor,
         PoissonType ptype,    // Тип решателя Пуассона (Якоби/SOR) для psi
+        ParallelizationMode parallel_choice, // Если параллелизм
         double cfl_omega,     // Коэффициент CFL для уравнения вихря
         double omega_sor_psi, // Параметр SOR для решателя psi
         unsigned max_psi_iter,  // Макс. итераций для psi

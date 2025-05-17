@@ -19,6 +19,7 @@ VorticityStreamfunctionSolver::VorticityStreamfunctionSolver(
     double inlet_turb_intensity,
     double inlet_length_scale_factor,
     PoissonType ptype,
+    ParallelizationMode parallel_choice,
     double cfl_omega,
     double omega_sor_psi,
     unsigned max_psi_iter,
@@ -33,7 +34,7 @@ VorticityStreamfunctionSolver::VorticityStreamfunctionSolver(
       cfl_omega_(cfl_omega),
       max_psi_iter_(max_psi_iter),
       psi_tol_(psi_tol),
-      poisson_solver_psi_(ptype, omega_sor_psi) {
+      poisson_solver_psi_(ptype, parallel_choice, omega_sor_psi) {
 
     const std::size_t ny_mesh = geom_.mesh().ny();
     const double dy_mesh = geom_.mesh().dy();

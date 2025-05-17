@@ -4,6 +4,8 @@ project(cfd_pipe LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(ENABLE_OMP "Enable OpenMP parallelization (requires OpenMP support from compiler)" ON) 
+
 # ─── Core library ────────────────────────────────────────────────────────────
 add_library(core
     src/core/Geometry.cpp
@@ -13,6 +15,11 @@ target_include_directories(core PUBLIC src)
 # ─── Math (Poisson) library ──────────────────────────────────────────────────
 add_library(math
     src/math/PoissonSolver.cpp
+    src/math/PoissonSolverDyn.cpp
+    src/math/sequential/JacobiSolverSeq.cpp
+    src/math/sequential/SORSolverSeq.cpp
+    src/math/omp/JacobiSolverOMP.cpp
+    # src/math/omp/SORSolverOMP.cpp
 )
 target_link_libraries(math PUBLIC core)
 target_include_directories(math PUBLIC src)
@@ -64,10 +71,17 @@ target_link_libraries(cfd_visualizer PRIVATE
 )
 
 # ─── OpenMP support ───────────────────────────────────────────────────────────
-find_package(OpenMP QUIET)
-if (OpenMP_CXX_FOUND)
-    foreach(t core math solvers cfd_visualizer)
-        target_link_libraries(${t} PUBLIC OpenMP::OpenMP_CXX)
-        target_compile_definitions(${t} PUBLIC USE_OPENMP)
-    endforeach()
+if(ENABLE_OMP) # Проверяем опцию пользователя
+    find_package(OpenMP QUIET) # Ищем OpenMP
+    if(OpenMP_CXX_FOUND)
+        message(STATUS "OpenMP support enabled and OpenMP found.")
+        foreach(t core math solvers cfd_visualizer) # Применяем ко всем нужным целям
+            target_link_libraries(${t} PUBLIC OpenMP::OpenMP_CXX)
+            target_compile_definitions(${t} PUBLIC USE_OPENMP)
+        endforeach()
+    else()
+        message(WARNING "OpenMP support was requested (ENABLE_OMP=ON), but OpenMP was not found. Proceeding without OpenMP.")
+    endif()
+else()
+    message(STATUS "OpenMP support disabled by user option (ENABLE_OMP=OFF).")
 endif()

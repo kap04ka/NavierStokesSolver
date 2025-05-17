@@ -24,11 +24,21 @@ enum class SolverChoice { VelocityPressure, VorticityStreamfunction };
 
 enum class ObstacleType { Rectangle, Circle };
 
+enum class ParallelizationChoice { Sequential, OpenMP, CUDA, MPI };
+
 const char* ObstacleTypeToString(ObstacleType type) {
     switch (type) {
         case ObstacleType::Rectangle: return "Rectangle";
         case ObstacleType::Circle:    return "Circle";
         default:                      return "Unknown";
+    }
+}
+
+const char* ParallelizationChoiceToString(ParallelizationChoice mode) {
+    switch (mode) {
+        case ParallelizationChoice::Sequential: return "Sequential";
+        case ParallelizationChoice::OpenMP:     return "OpenMP";
+        default:                                return "Unknown";
     }
 }
 
@@ -95,8 +105,12 @@ struct SimulationConfig {
     double inletTurbIntensity = 0.05;
     double inletLengthScaleFactor = 0.07;
 
+    // Настройки параллельности
+    ParallelizationChoice parallelModePoisson = ParallelizationChoice::Sequential; 
+
     SimulationConfig() {
-        ObstacleConfig::next_imgui_id = 0; // Сбрасываем счетчик ID при создании новой конфигурации
+        ObstacleConfig::next_imgui_id = 0;
+        parallelModePoisson = ParallelizationChoice::Sequential;
     }
 };
 
@@ -194,8 +208,8 @@ int main() {
             // Статическая переменная для хранения выбора в модальном окне
             static ObstacleType selected_new_obstacle_type = ObstacleType::Rectangle; 
             
-            ImGui::RadioButton("Rectangle##AddType", reinterpret_cast<int*>(&selected_new_obstacle_type), static_cast<int>(ObstacleType::Rectangle));
-            ImGui::RadioButton("Circle##AddType",    reinterpret_cast<int*>(&selected_new_obstacle_type), static_cast<int>(ObstacleType::Circle));
+            ImGui::RadioButton("Rectangle", reinterpret_cast<int*>(&selected_new_obstacle_type), static_cast<int>(ObstacleType::Rectangle));
+            ImGui::RadioButton("Circle",    reinterpret_cast<int*>(&selected_new_obstacle_type), static_cast<int>(ObstacleType::Circle));
             // Сюда можно будет добавить другие типы препятствий в будущем
 
             ImGui::Separator();
@@ -277,6 +291,12 @@ int main() {
                 if (obstacle_to_remove_idx != -1) {
                     cfg.obstacles.erase(cfg.obstacles.begin() + obstacle_to_remove_idx);
                 }
+
+        ImGui::Separator();
+        ImGui::Text("Poisson Solver Parallelization:");
+        ImGui::RadioButton("Sequential", reinterpret_cast<int*>(&cfg.parallelModePoisson), static_cast<int>(ParallelizationChoice::Sequential)); 
+        ImGui::SameLine();
+        ImGui::RadioButton("OpenMP", reinterpret_cast<int*>(&cfg.parallelModePoisson), static_cast<int>(ParallelizationChoice::OpenMP));
 
         ImGui::Separator();
         if (ImGui::Button("Start Simulation")) { started = true; }
@@ -362,6 +382,11 @@ int main() {
         }
     }
 
+    cfd::ParallelizationMode pmode_for_solvers;
+
+    if (cfg.parallelModePoisson == ParallelizationChoice::Sequential) pmode_for_solvers = cfd::ParallelizationMode::Sequential;
+    else if (cfg.parallelModePoisson == ParallelizationChoice::OpenMP) pmode_for_solvers = cfd::ParallelizationMode::OpenMP;
+
     std::unique_ptr<cfd::Solver> solver_ptr;
     cfd::VelocityPressureSolver* vp_solver_raw_ptr = nullptr;
     cfd::VorticityStreamfunctionSolver* vs_solver_raw_ptr = nullptr;
@@ -371,7 +396,7 @@ int main() {
             geom, cfg.rho, cfg.nu,
             static_cast<cfd::TurbulenceModelType>(cfg.turbulenceChoice),
             cfg.umax, cfg.inletTurbIntensity, cfg.inletLengthScaleFactor,
-            static_cast<cfd::PoissonType>(cfg.poisson_solver_type),
+            static_cast<cfd::PoissonType>(cfg.poisson_solver_type), pmode_for_solvers,
             cfg.cfl, cfg.poisson_sor_omega, cfg.poisson_max_iter, cfg.poisson_tol
         );
         vp_solver_raw_ptr = static_cast<cfd::VelocityPressureSolver*>(solver_ptr.get());
@@ -381,8 +406,8 @@ int main() {
             geom, cfg.rho, cfg.nu,
             static_cast<cfd::TurbulenceModelType>(cfg.turbulenceChoice),
             cfg.umax, cfg.inletTurbIntensity, cfg.inletLengthScaleFactor,
-            static_cast<cfd::PoissonType>(cfg.poisson_solver_type),
-            cfg.cfl, // VS_Solver будет использовать этот CFL для вихря
+            static_cast<cfd::PoissonType>(cfg.poisson_solver_type), pmode_for_solvers,
+            cfg.cfl, 
             cfg.poisson_sor_omega, cfg.poisson_max_iter, cfg.poisson_tol
         );
         vs_solver_raw_ptr = static_cast<cfd::VorticityStreamfunctionSolver*>(solver_ptr.get());

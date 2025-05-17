@@ -2,7 +2,7 @@
 #include "solvers/base/Solver.hpp"
 #include "core/Field2D.hpp"
 #include "core/CellTag.hpp"
-#include "math/PoissonSolver.hpp"
+#include "math/PoissonSolverDyn.hpp" 
 
 namespace cfd {
 
@@ -24,6 +24,7 @@ public:
         double inlet_turb_intensity = 0.05,
         double inlet_length_scale_factor = 0.07,
         PoissonType ptype = PoissonType::Jacobi,
+        ParallelizationMode parallel_choice = ParallelizationMode::Sequential, 
         double cfl = 0.4,
         double omega = 1.7,
         unsigned max_p_iter = 400,

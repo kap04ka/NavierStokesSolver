@@ -19,6 +19,7 @@ VelocityPressureSolver::VelocityPressureSolver(
     double inlet_turb_intensity,      
     double inlet_length_scale_factor, 
     PoissonType ptype,
+    ParallelizationMode parallel_choice, 
     double cfl, 
     double omega,
     unsigned max_p_iter,
@@ -31,7 +32,7 @@ VelocityPressureSolver::VelocityPressureSolver(
     tag_(geom.tags()),
     cfl_(cfl),
     max_pressure_iter_(max_p_iter), pressure_tol_(p_tol),
-    poisson_(ptype, omega) {}
+    poisson_(ptype, parallel_choice, omega) {}
 
 //---------------------------------------------------------------- inlet --
 void VelocityPressureSolver::set_inlet_parabola(double umax)
