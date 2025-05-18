@@ -18,6 +18,7 @@
 #include <memory>  // Для std::unique_ptr
 #include <variant>
 #include <vector>
+#include <chrono>
 
 // Тип решателя
 enum class SolverChoice { VelocityPressure, VorticityStreamfunction };
@@ -120,6 +121,12 @@ int main() {
     bool started = false;
     double simulationTime = 0.0;
 
+    // Переменные для измерения реального времени работы worker-а
+    std::chrono::high_resolution_clock::time_point wall_time_start;
+    std::chrono::high_resolution_clock::time_point wall_time_end;
+    bool wall_time_measured = false;
+    double total_real_calc_time_sec = 0.0;
+
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return -1;
@@ -131,7 +138,7 @@ int main() {
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    GLFWwindow* cfgWindow = glfwCreateWindow(700, 650, "Simulation Setup", nullptr, nullptr);
+    GLFWwindow* cfgWindow = glfwCreateWindow(1920, 1080, "Simulation Setup", nullptr, nullptr);
     if (!cfgWindow) { 
         std::cerr << "Failed to create GLFW config window" << std::endl;
         ImGui::DestroyContext();
@@ -434,11 +441,22 @@ int main() {
     std::mutex data_mutex;
     std::atomic<bool> stopFlag{false};
 
+    wall_time_start = std::chrono::high_resolution_clock::now(); 
+
     std::thread worker([&]() {
         simulationTime = 0.0;
         int stepCount = 0;
-        while (!stopFlag.load() && simulationTime < cfg.sim_duration) {
-            if (!solver_ptr) break; // Защита, если решатель не создан
+
+        {
+            std::lock_guard<std::mutex> lock(data_mutex);
+            shared_vp_monitor_info = {};
+            shared_vs_monitor_info = {};
+            last_actual_dt_shared = 0.0;
+        }
+
+        while (!stopFlag.load(std::memory_order_acquire) && simulationTime < cfg.sim_duration) {
+            if (!solver_ptr) { stopFlag.store(true, std::memory_order_release); break; }
+
             solver_ptr->step(cfg.dt_user); 
 
             { 
@@ -476,8 +494,9 @@ int main() {
              }
         }
         stopFlag = true;
-        std::cout << "Simulation thread finished. Total time: " << simulationTime << "s, Steps: " << stepCount << std::endl;
-    });
+        std::cout << "Simulation thread finished. Target/Actual SimTime: " 
+                  << std::fixed << std::setprecision(4) << cfg.sim_duration << " / " << simulationTime
+                  << " s, Steps: " << stepCount << std::endl; });
 
     FlowVisualizer vis(geom, u_buffer, v_buffer, scalar_buffer_for_vis, geom.tags());
 
@@ -491,8 +510,8 @@ int main() {
         vis.showVelocity_ = true;     // Скорости включаем
     }
 
-    int winWidth = std::max(600, std::min(1600, cfg.NX * 8)); 
-    int winHeight = std::max(400, std::min(1000, cfg.NY * 8));
+    int winWidth = std::max(1920, std::min(1600, cfg.NX * 8)); 
+    int winHeight = std::max(1080, std::min(1000, cfg.NY * 8));
     if (!vis.init(winWidth, winHeight, "CFD Visualization")) {
         std::cerr << "Failed to initialize FlowVisualizer" << std::endl;
         stopFlag = true; if(worker.joinable()) worker.join();
@@ -510,7 +529,7 @@ int main() {
     while (vis.shouldRun()) { // Убрал stopFlag из условия цикла окна, чтобы можно было смотреть результат после остановки потока
         glfwPollEvents();
         
-        bool current_stop_flag_val = stopFlag.load(std::memory_order_relaxed);
+        bool current_stop_flag_val = stopFlag.load(std::memory_order_acquire);
 
         { 
             std::lock_guard<std::mutex> lock(data_mutex);
@@ -521,8 +540,6 @@ int main() {
                 display_vs_monitor_info = shared_vs_monitor_info;
             }
             display_actual_dt = last_actual_dt_shared;
-            // u_buffer, v_buffer, p_buffer обновляются в рабочем потоке,
-            // FlowVisualizer использует их по ссылкам.
         }
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -558,12 +575,28 @@ int main() {
             }
         }
         ImGui::Separator();
-        if (current_stop_flag_val && simulationTime >= cfg.sim_duration) {
-            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Simulation Target Time Reached.");
-        } else if (current_stop_flag_val) {
-             ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.2f, 1.0f), "Simulation Thread Finished/Stopped.");
+        
+        if (current_stop_flag_val) { // Если рабочий поток завершился
+            if (!wall_time_measured) { // Вычисляем реальное время один раз
+                wall_time_end = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double> wall_time_duration = wall_time_end - wall_time_start;
+                total_real_calc_time_sec = wall_time_duration.count();
+                wall_time_measured = true;
+            }
+            // Отображаем сообщение о завершении
+            if (simulationTime >= cfg.sim_duration - 1e-3*cfg.sim_duration) { // Добавил небольшой допуск
+                ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Simulation Target Time Reached.");
+            } else {
+                 ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.2f, 1.0f), "Simulation Thread Finished/Stopped.");
+            }
+            // Отображаем реальное время расчета
+            if (wall_time_measured) {
+                 ImGui::Text("Total Real Calculation Time: %.3f seconds", total_real_calc_time_sec);
+            }
+        } else { // Если поток еще работает
+            ImGui::Text("Simulation Running...");
         }
-        ImGui::End();
+        ImGui::End(); 
 
         ImGui::Begin("Visualization Settings");
         ImGui::Checkbox("Show Velocity Vectors", &vis.showVelocity_);
@@ -608,11 +641,20 @@ int main() {
         }
     }
 
-    if (!stopFlag.load()) { // Если вышли из цикла визуализации, а поток еще работает
-      stopFlag = true; // Сигнализируем потоку остановиться
+    if (!stopFlag.load(std::memory_order_acquire)) {
+        stopFlag.store(true, std::memory_order_release); 
     }
+
     if (worker.joinable()) { 
         worker.join(); 
+
+        if (!wall_time_measured && started) { // Убедимся, что started был true
+            wall_time_end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> wall_time_duration = wall_time_end - wall_time_start;
+            total_real_calc_time_sec = wall_time_duration.count();
+            // wall_time_measured = true; // Уже не нужно для UI
+            std::cout << "Final Real Calculation Time (measured after join): " << total_real_calc_time_sec << " seconds" << std::endl;
+        }
     }
 
     ImGui_ImplOpenGL3_Shutdown();
