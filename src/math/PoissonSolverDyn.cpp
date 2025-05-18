@@ -24,12 +24,16 @@ ConvergenceInfo PoissonSolverDyn::solve(
     if (type_ == PoissonType::Jacobi) {
         if (parallel_mode_ == ParallelizationMode::OpenMP) {
             return jac_omp_solver_.solve(phi, rhs, geom, mode, maxIter, tol);
+        } else if (parallel_mode_ == ParallelizationMode::CUDA) {
+            return jac_cuda_solver_.solve(phi, rhs, geom, mode, maxIter, tol);
         } else { // Sequential
             return jac_seq_solver_.solve(phi, rhs, geom, mode, maxIter, tol);
         }
     } else {
         if (parallel_mode_ == ParallelizationMode::OpenMP) {
             return sor_omp_solver_.solve(phi, rhs, geom, mode, maxIter, tol);
+        } else if (parallel_mode_ == ParallelizationMode::CUDA) {
+            return sor_cuda_solver_.solve(phi, rhs, geom, mode, maxIter, tol);
         } else { // Sequential
              return sor_seq_solver_.solve(phi, rhs, geom, mode, maxIter, tol);
         }

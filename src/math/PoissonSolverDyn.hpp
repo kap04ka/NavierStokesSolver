@@ -3,15 +3,17 @@
 #include "math/sequential/JacobiSolverSeq.hpp"
 #include "math/sequential/SORSolverSeq.hpp"
 #include "math/omp/JacobiSolverOMP.hpp"
-#include "math/omp/SORSolverRedBlackOMP.hpp" // В будущем
+#include "math/omp/SORSolverRedBlackOMP.hpp" 
+#include "math/cuda/JacobiSolverCUDA.hpp"
+#include "math/cuda/SORSolverRedBlackCUDA.hpp"
 
 namespace cfd {
 
 // Режим параллелизации для PoissonSolverDyn
 enum class ParallelizationMode { 
     Sequential, 
-    OpenMP 
-    // CUDA, // В будущем
+    OpenMP,
+    CUDA
     // MPI   // В будущем
 };
 
@@ -38,10 +40,12 @@ private:
     ParallelizationMode parallel_mode_;
     
     // Экземпляры всех возможных решателей
-    JacobiSolverSeq jac_seq_solver_;
-    JacobiSolverOMP jac_omp_solver_;
-    SORSolverSeq    sor_seq_solver_; 
-    SORSolverRedBlackOMP sor_omp_solver_; // В будущем
+    JacobiSolverSeq         jac_seq_solver_;
+    JacobiSolverOMP         jac_omp_solver_;
+    JacobiSolverCUDA        jac_cuda_solver_;
+    SORSolverSeq            sor_seq_solver_; 
+    SORSolverRedBlackOMP    sor_omp_solver_; 
+    SORSolverRedBlackCUDA   sor_cuda_solver_;
 };
 
 } // namespace cfd

@@ -19,6 +19,15 @@ public:
     T& operator()(std::size_t i, std::size_t j)               { return data_[idx(i, j)]; }
     const T& operator()(std::size_t i, std::size_t j) const   { return data_[idx(i, j)]; }
 
+    T* raw_data_ptr_for_write() { // Для неконстантного доступа (запись)
+        if (data_.empty()) return nullptr; // Защита от пустого вектора
+        return data_.data(); 
+    }
+    const T* raw_data_ptr() const { 
+        if (data_.empty()) return nullptr;
+        return data_.data(); 
+    }
+
     void fill(const T& val) { std::fill(data_.begin(), data_.end(), val); }
     void swap(Field2D& other) noexcept
     {

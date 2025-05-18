@@ -1,10 +1,15 @@
 cmake_minimum_required(VERSION 3.20)
-project(cfd_pipe LANGUAGES CXX)
+project(cfd_pipe LANGUAGES CXX CUDA)
+
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+  set(CMAKE_CUDA_ARCHITECTURES 61 CACHE STRING "Compute Capability 6.1 for GTX 1060")
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(ENABLE_OMP "Enable OpenMP parallelization (requires OpenMP support from compiler)" ON) 
+option(ENABLE_CUDA "Enable CUDA parallelization" ON) 
 
 # ─── Core library ────────────────────────────────────────────────────────────
 add_library(core
@@ -20,6 +25,8 @@ add_library(math
     src/math/sequential/SORSolverSeq.cpp
     src/math/omp/JacobiSolverOMP.cpp
     src/math/omp/SORSolverRedBlackOMP.cpp
+    src/math/cuda/JacobiSolverCUDA.cu
+    src/math/cuda/SORSolverRedBlackCUDA.cu
 )
 target_link_libraries(math PUBLIC core)
 target_include_directories(math PUBLIC src)
@@ -34,13 +41,6 @@ add_library(solvers
 )
 target_link_libraries(solvers PUBLIC core math)
 target_include_directories(solvers PUBLIC src)
-
-# ─── Test executable ─────────────────────────────────────────────────────────
-add_executable(test_obstacle
-    tests/test_obstacle.cpp
-)
-target_include_directories(test_obstacle PRIVATE src)
-target_link_libraries(test_obstacle PRIVATE solvers)
 
 # ─── Visualizer executable ───────────────────────────────────────────────────
 add_executable(cfd_visualizer
@@ -84,4 +84,22 @@ if(ENABLE_OMP) # Проверяем опцию пользователя
     endif()
 else()
     message(STATUS "OpenMP support disabled by user option (ENABLE_OMP=OFF).")
+endif()
+
+# ─── CUDA support ───────────────────────────────────────────────────────────
+
+if(ENABLE_CUDA)
+    find_package(CUDAToolkit QUIET) 
+    if(CUDAToolkit_FOUND)
+        message(STATUS "CUDA Toolkit found, enabling CUDA support specifically for 'math' library.")
+
+        if(MATH_CUDA_SOURCES) 
+            target_sources(math PRIVATE ${MATH_CUDA_SOURCES}) 
+        endif()
+        
+        target_link_libraries(math PUBLIC CUDA::cudart) 
+        target_compile_definitions(math PUBLIC USE_CUDA) 
+    else()
+        message(WARNING "ENABLE_CUDA is ON, but CUDA Toolkit not found. 'math' library built without CUDA specifics.")
+    endif()
 endif()

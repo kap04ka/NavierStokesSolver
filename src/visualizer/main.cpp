@@ -39,6 +39,7 @@ const char* ParallelizationChoiceToString(ParallelizationChoice mode) {
     switch (mode) {
         case ParallelizationChoice::Sequential: return "Sequential";
         case ParallelizationChoice::OpenMP:     return "OpenMP";
+        case ParallelizationChoice::CUDA:       return "CUDA";
         default:                                return "Unknown";
     }
 }
@@ -72,10 +73,10 @@ int ObstacleConfig::next_imgui_id = 0; // Статический член для
 // Обновленная конфигурация симуляции
 struct SimulationConfig {
     // Общие параметры сетки и домена
-    int NX = 60;
-    int NY = 30;
-    double Lx = 1.0;
-    double Ly = 0.5;
+    int NX = 120;
+    int NY = 61;
+    double Lx = 2.0;
+    double Ly = 1.0;
 
     // Препятствие
     std::vector<ObstacleConfig> obstacles;
@@ -86,7 +87,7 @@ struct SimulationConfig {
     double umax = 1.0; // Макс. скорость на входе (для профиля и Q)
 
     // Общие параметры симуляции
-    double sim_duration = 10.0;
+    double sim_duration = 3.0;
     double dt_user = 0.001;
 
     // Выбор решателя
@@ -99,7 +100,7 @@ struct SimulationConfig {
     int poisson_solver_type = static_cast<int>(cfd::PoissonType::SOR);
     double poisson_sor_omega = 1.7;
     unsigned poisson_max_iter = 500; 
-    double poisson_tol = 1e-5;
+    double poisson_tol = 1e-3;
 
     // Параметры турбулентности (общие для обоих, если они ее поддерживают)
     int turbulenceChoice = static_cast<int>(cfd::TurbulenceModelType::None); // 0=None, 1=KEpsilon
@@ -304,6 +305,8 @@ int main() {
         ImGui::RadioButton("Sequential", reinterpret_cast<int*>(&cfg.parallelModePoisson), static_cast<int>(ParallelizationChoice::Sequential)); 
         ImGui::SameLine();
         ImGui::RadioButton("OpenMP", reinterpret_cast<int*>(&cfg.parallelModePoisson), static_cast<int>(ParallelizationChoice::OpenMP));
+        ImGui::SameLine();
+        ImGui::RadioButton("CUDA", reinterpret_cast<int*>(&cfg.parallelModePoisson), static_cast<int>(ParallelizationChoice::CUDA));
 
         ImGui::Separator();
         if (ImGui::Button("Start Simulation")) { started = true; }
@@ -393,6 +396,8 @@ int main() {
 
     if (cfg.parallelModePoisson == ParallelizationChoice::Sequential) pmode_for_solvers = cfd::ParallelizationMode::Sequential;
     else if (cfg.parallelModePoisson == ParallelizationChoice::OpenMP) pmode_for_solvers = cfd::ParallelizationMode::OpenMP;
+    else if (cfg.parallelModePoisson == ParallelizationChoice::CUDA) pmode_for_solvers = cfd::ParallelizationMode::CUDA;
+    else pmode_for_solvers = cfd::ParallelizationMode::Sequential;
 
     std::unique_ptr<cfd::Solver> solver_ptr;
     cfd::VelocityPressureSolver* vp_solver_raw_ptr = nullptr;
