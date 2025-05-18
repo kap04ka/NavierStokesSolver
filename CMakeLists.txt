@@ -19,7 +19,7 @@ add_library(math
     src/math/sequential/JacobiSolverSeq.cpp
     src/math/sequential/SORSolverSeq.cpp
     src/math/omp/JacobiSolverOMP.cpp
-    # src/math/omp/SORSolverOMP.cpp
+    src/math/omp/SORSolverRedBlackOMP.cpp
 )
 target_link_libraries(math PUBLIC core)
 target_include_directories(math PUBLIC src)

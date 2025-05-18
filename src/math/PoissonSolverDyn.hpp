@@ -3,7 +3,7 @@
 #include "math/sequential/JacobiSolverSeq.hpp"
 #include "math/sequential/SORSolverSeq.hpp"
 #include "math/omp/JacobiSolverOMP.hpp"
-// #include "math/omp/SORSolverRedBlackOMP.hpp" // В будущем
+#include "math/omp/SORSolverRedBlackOMP.hpp" // В будущем
 
 namespace cfd {
 
@@ -41,7 +41,7 @@ private:
     JacobiSolverSeq jac_seq_solver_;
     JacobiSolverOMP jac_omp_solver_;
     SORSolverSeq    sor_seq_solver_; 
-    // SORSolverRedBlackOMP sor_omp_solver_; // В будущем
+    SORSolverRedBlackOMP sor_omp_solver_; // В будущем
 };
 
 } // namespace cfd

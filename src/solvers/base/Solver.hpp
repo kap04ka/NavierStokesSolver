@@ -19,40 +19,31 @@ public:
           u_max_inlet_bc_(u_max_inlet),
           turbulence_model_(nullptr)
         {
-            // --- Создаем модель турбулентности НАПРЯМУЮ ---
             switch (turb_type) {
                 case TurbulenceModelType::None:
                     std::cout << "Solver created with Turbulence Model: None (Laminar)" << std::endl;
-                    // turbulence_model_ остается nullptr
                     break;
                 case TurbulenceModelType::KEpsilon:
                     std::cout << "Solver created with Turbulence Model: k-epsilon" << std::endl;
                     // Создаем KEpsilonModel, передавая нужные параметры
                     turbulence_model_ = std::make_unique<KEpsilonModel>(
                         geom, rho, nu_molecular,
-                        u_max_inlet_bc_, // << Передаем umax
+                        u_max_inlet_bc_,
                         inlet_turb_intensity,
                         inlet_length_scale_factor
-                        // Можно передать и структуру констант, если нужно
                     );
                     break;
-                // case TurbulenceModelType::KOmega:
-                //     // turbulence_model_ = std::make_unique<KOmegaModel>(...);
-                //     break;
                 default:
                     throw std::runtime_error("Unknown turbulence model type requested in Solver constructor.");
             } 
         }
     virtual ~Solver() = default;
     virtual void step(double dt) = 0;
-    // Метод для получения эффективной вязкости
     [[nodiscard]] double get_effective_viscosity(std::size_t i, std::size_t j) const {
             const Field2D<double>* nu_t_field = turbulence_model_ ? turbulence_model_->nu_t() : nullptr;
             if (nu_t_field) {
-                // Возвращаем сумму молекулярной и турбулентной (с ограничением >= 0)
                 return nu_molecular_ + std::max(0.0, (*nu_t_field)(i, j));
             } else {
-                // Возвращаем только молекулярную для ламинарного режима
                 return nu_molecular_;
             }
         }
