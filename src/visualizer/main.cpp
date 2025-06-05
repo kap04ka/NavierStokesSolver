@@ -3,6 +3,7 @@
 #include "solvers/base/Solver.hpp" // Базовый класс Solver
 #include "solvers/velocity_pressure/VelocityPressureSolver.hpp"
 #include "solvers/vorticity_streamfunction/VorticityStreamfunctionSolver.hpp" // Подключаем новый решатель
+#include "utils/export_utils.hpp" 
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -127,19 +128,27 @@ int main() {
     std::chrono::high_resolution_clock::time_point wall_time_end;
     bool wall_time_measured = false;
     double total_real_calc_time_sec = 0.0;
+    bool results_saved_this_session = false;
 
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return -1;
     }
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    ImGui::StyleColorsDark();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGui::StyleColorsLight();
+
+    const char* font_path = "ofont.ru_ISOCPEUR.ttf";
+    float font_size = 16.0f;
+    const ImWchar* ranges = io.Fonts->GetGlyphRangesCyrillic();
+    io.Fonts->AddFontFromFileTTF(font_path, font_size, nullptr, ranges);
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    GLFWwindow* cfgWindow = glfwCreateWindow(1920, 1080, "Simulation Setup", nullptr, nullptr);
+    GLFWwindow* cfgWindow = glfwCreateWindow(1920, 1080, "Настройка Симуляции", nullptr, nullptr);
     if (!cfgWindow) { 
         std::cerr << "Failed to create GLFW config window" << std::endl;
         ImGui::DestroyContext();
@@ -148,6 +157,7 @@ int main() {
     }
     glfwMakeContextCurrent(cfgWindow);
     glfwSwapInterval(1); // Enable vsync
+
     ImGui_ImplGlfw_InitForOpenGL(cfgWindow, true);
     ImGui_ImplOpenGL3_Init("#version 130");
 
@@ -157,81 +167,99 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Simulation Configuration");
+        ImGui::Begin("Конфигурация симуляции", nullptr, ImGuiWindowFlags_NoCollapse);
         SolverChoice previousSolverType = cfg.solverType; // Сохраняем предыдущий тип
-        ImGui::Text("Solver Type:");
-        ImGui::RadioButton("Velocity-Pressure", reinterpret_cast<int*>(&cfg.solverType), static_cast<int>(SolverChoice::VelocityPressure)); ImGui::SameLine();
-        ImGui::RadioButton("Vorticity-Streamfunction", reinterpret_cast<int*>(&cfg.solverType), static_cast<int>(SolverChoice::VorticityStreamfunction));
+
+        // Секция 1: Тип солвера
+        ImGui::TextColored(ImVec4(0.2f, 0.5f, 0.8f, 1.0f), "Тип солвера");
+        ImGui::Separator();
+        ImGui::RadioButton("Скорость-Давление", reinterpret_cast<int*>(&cfg.solverType), static_cast<int>(SolverChoice::VelocityPressure)); 
+        ImGui::SameLine();
+        ImGui::RadioButton("Вихрь-Функция тока", reinterpret_cast<int*>(&cfg.solverType), static_cast<int>(SolverChoice::VorticityStreamfunction));
+        ImGui::Dummy(ImVec2(0, 10));
         
+        // Секция 2: Расчетная область
+        ImGui::TextColored(ImVec4(0.2f, 0.5f, 0.8f, 1.0f), "Расчетная область");
         ImGui::Separator();
+        ImGui::InputInt("NX (ячеек по X)", &cfg.NX);
+        ImGui::InputInt("NY (ячеек по Y)", &cfg.NY);
+        ImGui::InputDouble("Lx (длина области)", &cfg.Lx);
+        ImGui::InputDouble("Ly (высота области)", &cfg.Ly);
+        ImGui::Dummy(ImVec2(0, 10));
 
-        ImGui::InputInt("NX (Grid Cells X)", &cfg.NX);
-        ImGui::InputInt("NY (Grid Cells Y)", &cfg.NY);
-        ImGui::InputDouble("Lx (Domain Length)", &cfg.Lx);
-        ImGui::InputDouble("Ly (Domain Height)", &cfg.Ly);
+        // Секция 3: Параметры жидкости
+        ImGui::TextColored(ImVec4(0.2f, 0.5f, 0.8f, 1.0f), "Параметры жидкости");
         ImGui::Separator();
-        ImGui::InputDouble("rho (Density)", &cfg.rho);
-        ImGui::InputDouble("nu (Kinematic Viscosity)", &cfg.nu, 0.0, 0.0, "%.1e");
-        ImGui::InputDouble("Umax (Inlet Profile)", &cfg.umax);
-        ImGui::Separator();
-        ImGui::InputDouble("User dt (Max)", &cfg.dt_user, 0.0, 0.0, "%.1e");
-        ImGui::InputDouble("Simulation Duration (s)", &cfg.sim_duration);
-        ImGui::Separator();
+        ImGui::InputDouble("Плотность (rho)", &cfg.rho);
+        ImGui::InputDouble("Кинематическая вязкость (nu)", &cfg.nu, 0.0, 0.0, "%.1e");
+        ImGui::InputDouble("Umax (макс. скорость)", &cfg.umax);
+        ImGui::Dummy(ImVec2(0, 10));
 
-        ImGui::InputDouble("CFL Factor", &cfg.cfl, 0.0, 0.0, "%.2f");
+        // Секция 4: Настройки симуляции
+        ImGui::TextColored(ImVec4(0.2f, 0.5f, 0.8f, 1.0f), "Настройки симуляции");
         ImGui::Separator();
-        ImGui::Text("Poisson-like Solver Settings (for P or Psi):");
-        static const char* poissonItems[] = {"Jacobi","SOR"};
-        ImGui::Combo("Solver Type##Poisson", &cfg.poisson_solver_type, poissonItems, IM_ARRAYSIZE(poissonItems));
+        ImGui::InputDouble("Шаг по времени (dt)", &cfg.dt_user, 0.0, 0.0, "%.1e");
+        ImGui::InputDouble("Длительность симуляции", &cfg.sim_duration);
+        ImGui::InputDouble("CFL число", &cfg.cfl, 0.0, 0.0, "%.2f");
+        ImGui::Dummy(ImVec2(0, 10));
+
+        // Секция 5: Решатель Пуассона
+        ImGui::TextColored(ImVec4(0.2f, 0.5f, 0.8f, 1.0f), "Решатель Пуассона");
+        ImGui::Separator();
+        static const char* poissonItems[] = {"Якоби", "SOR"};
+        ImGui::Combo("Тип решателя##Poisson", &cfg.poisson_solver_type, poissonItems, IM_ARRAYSIZE(poissonItems));
         if (cfg.poisson_solver_type == static_cast<int>(cfd::PoissonType::SOR)) {
-            ImGui::InputDouble("SOR Omega", &cfg.poisson_sor_omega, 0.0, 0.0, "%.2f");
+            ImGui::InputDouble("Параметр релаксации SOR", &cfg.poisson_sor_omega, 0.0, 0.0, "%.2f");
         }
-        ImGui::InputInt("Max Iterations##Poisson", (int*)&cfg.poisson_max_iter);
-        ImGui::InputDouble("Tolerance##Poisson", &cfg.poisson_tol, 0.0, 0.0, "%.1e");
-        ImGui::Separator();
+        ImGui::InputInt("Макс. итераций##Poisson", (int*)&cfg.poisson_max_iter);
+        ImGui::InputDouble("Допуск сходимости##Poisson", &cfg.poisson_tol, 0.0, 0.0, "%.1e");
+        ImGui::Dummy(ImVec2(0, 10));
 
-        ImGui::Text("Flow Model (Common):");
-        ImGui::RadioButton("Laminar##flow", &cfg.turbulenceChoice, static_cast<int>(cfd::TurbulenceModelType::None)); ImGui::SameLine();
+        // Секция 6: Турбулентность
+        ImGui::TextColored(ImVec4(0.2f, 0.5f, 0.8f, 1.0f), "Модель турбулентности");
+        ImGui::Separator();
+        ImGui::RadioButton("Ламинарный поток##flow", &cfg.turbulenceChoice, static_cast<int>(cfd::TurbulenceModelType::None)); 
+        ImGui::SameLine();
         ImGui::RadioButton("k-epsilon##flow", &cfg.turbulenceChoice, static_cast<int>(cfd::TurbulenceModelType::KEpsilon));
         if (cfg.turbulenceChoice != static_cast<int>(cfd::TurbulenceModelType::None)) {
             ImGui::Indent();
-            ImGui::InputDouble("Inlet Turb Intensity", &cfg.inletTurbIntensity, 0.0,0.0, "%.3f");
+            ImGui::InputDouble("Турбулентность на входе", &cfg.inletTurbIntensity, 0.0,0.0, "%.3f");
             cfg.inletTurbIntensity = std::max(0.0, std::min(1.0, cfg.inletTurbIntensity));
-            ImGui::InputDouble("Inlet L Scale Factor", &cfg.inletLengthScaleFactor, 0.0,0.0, "%.3f");
+            ImGui::InputDouble("Масштаб длины на входе", &cfg.inletLengthScaleFactor, 0.0,0.0, "%.3f");
             cfg.inletLengthScaleFactor = std::max(0.001, cfg.inletLengthScaleFactor);
             ImGui::Unindent();
         }
-
+        ImGui::Dummy(ImVec2(0, 10));
+        
+        // Секция 7: Препятствия
+        ImGui::TextColored(ImVec4(0.2f, 0.5f, 0.8f, 1.0f), "Препятствия");
         ImGui::Separator();
-        ImGui::Text("Obstacles Configuration");
-
-        // Кнопка для открытия модального окна добавления препятствия
-        if (ImGui::Button("Add New Obstacle")) {
+        if (ImGui::Button("Добавить препятствие", ImVec2(-1, 30))) {
             ImGui::OpenPopup("AddObstacleTypePopup");
-        }
+        }       
 
         // Модальное окно для выбора типа нового препятствия
         if (ImGui::BeginPopupModal("AddObstacleTypePopup", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("Select obstacle type to add:");
+            ImGui::Text("Выберите какое препятствие добавить:");
             // Статическая переменная для хранения выбора в модальном окне
             static ObstacleType selected_new_obstacle_type = ObstacleType::Rectangle; 
             
-            ImGui::RadioButton("Rectangle", reinterpret_cast<int*>(&selected_new_obstacle_type), static_cast<int>(ObstacleType::Rectangle));
-            ImGui::RadioButton("Circle",    reinterpret_cast<int*>(&selected_new_obstacle_type), static_cast<int>(ObstacleType::Circle));
+            ImGui::RadioButton("Прямоугольник", reinterpret_cast<int*>(&selected_new_obstacle_type), static_cast<int>(ObstacleType::Rectangle));
+            ImGui::RadioButton("Круг",    reinterpret_cast<int*>(&selected_new_obstacle_type), static_cast<int>(ObstacleType::Circle));
             // Сюда можно будет добавить другие типы препятствий в будущем
 
             ImGui::Separator();
-            if (ImGui::Button("Add This Type", ImVec2(150, 0))) {
+            if (ImGui::Button("Добавить", ImVec2(150, 0))) {
                 std::string new_obs_name;
                 if (selected_new_obstacle_type == ObstacleType::Rectangle) {
-                    new_obs_name = "Rectangle " + std::to_string(cfg.obstacles.size() + 1);
+                    new_obs_name = "Прямоугольник " + std::to_string(cfg.obstacles.size() + 1);
                     cfg.obstacles.emplace_back(
                         ObstacleType::Rectangle, 
                         RectangleObstacleParams{cfg.NX/4, cfg.NY/4, cfg.NX/4+10, cfg.NY/4+10}, 
                         new_obs_name
                     );
                 } else if (selected_new_obstacle_type == ObstacleType::Circle) {
-                    new_obs_name = "Circle " + std::to_string(cfg.obstacles.size() + 1);
+                    new_obs_name = "Круг " + std::to_string(cfg.obstacles.size() + 1);
                     // Параметры по умолчанию для круга: центр в (NX/2, NY/2), радиус = Ly/10
                     cfg.obstacles.emplace_back(
                         ObstacleType::Circle, 
@@ -269,11 +297,11 @@ int main() {
                     ImGui::Text("(%s)", ObstacleTypeToString(obs_cfg_ref.type)); // Показываем тип
         
                     ImGui::SameLine(ImGui::GetWindowWidth() - 100); // Кнопка удаления справа
-                    if (ImGui::Button("Remove")) {
+                    if (ImGui::Button("Удалить")) {
                         obstacle_to_remove_idx = k;
                     }
                     
-                    ImGui::Checkbox("Enabled", &obs_cfg_ref.enabled);
+                    ImGui::Checkbox("Включено", &obs_cfg_ref.enabled);
         
                     if (obs_cfg_ref.enabled) {
                         // Используем std::visit для отображения параметров в зависимости от типа
@@ -285,9 +313,9 @@ int main() {
                                 ImGui::InputInt("i1", &params.i1); ImGui::InputInt("j1", &params.j1);
                             } else if constexpr (std::is_same_v<T_params, CircleObstacleParams>) {
                                 // Параметры для круга: центр в индексах, радиус физический
-                                ImGui::InputInt("Center i", &params.center_i); 
-                                ImGui::InputInt("Center j", &params.center_j);
-                                ImGui::InputDouble("Radius (physical units)", &params.radius_phys, 0.0, 0.0, "%.4f");
+                                ImGui::InputInt("Центр i", &params.center_i); 
+                                ImGui::InputInt("Центр j", &params.center_j);
+                                ImGui::InputDouble("Радиус (физический)", &params.radius_phys, 0.0, 0.0, "%.4f");
                             }
                             // Сюда можно будет добавить else if для других типов препятствий
                         }, obs_cfg_ref.params);
@@ -300,16 +328,22 @@ int main() {
                     cfg.obstacles.erase(cfg.obstacles.begin() + obstacle_to_remove_idx);
                 }
 
+        // Секция 8: Параллелизация
+        ImGui::TextColored(ImVec4(0.2f, 0.5f, 0.8f, 1.0f), "Параллелизация");
         ImGui::Separator();
-        ImGui::Text("Poisson Solver Parallelization:");
-        ImGui::RadioButton("Sequential", reinterpret_cast<int*>(&cfg.parallelModePoisson), static_cast<int>(ParallelizationChoice::Sequential)); 
+        ImGui::RadioButton("Последовательный", reinterpret_cast<int*>(&cfg.parallelModePoisson), static_cast<int>(ParallelizationChoice::Sequential)); 
         ImGui::SameLine();
         ImGui::RadioButton("OpenMP", reinterpret_cast<int*>(&cfg.parallelModePoisson), static_cast<int>(ParallelizationChoice::OpenMP));
         ImGui::SameLine();
         ImGui::RadioButton("CUDA", reinterpret_cast<int*>(&cfg.parallelModePoisson), static_cast<int>(ParallelizationChoice::CUDA));
+        ImGui::Dummy(ImVec2(0, 15));
 
-        ImGui::Separator();
-        if (ImGui::Button("Start Simulation")) { started = true; }
+        // Кнопка запуска
+        ImGui::Dummy(ImVec2(0, 20));
+        if (ImGui::Button("НАЧАТЬ РАСЧЕТ", ImVec2(-1, 50))) {
+            started = true;
+        }
+        ImGui::SetItemDefaultFocus();
         ImGui::End();
 
         ImGui::Render();
@@ -551,31 +585,31 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Solver Monitor");
-        ImGui::Text("Simulation Time: %.3f s / %.1f s", simulationTime, cfg.sim_duration);
-        ImGui::Text("Actual dt: %.3e s", display_actual_dt);
+        ImGui::Begin("Показатели расчета");
+        ImGui::Text("Время симуляции: %.3f s / %.1f s", simulationTime, cfg.sim_duration);
+        ImGui::Text("Актуальный шаг по времени (dt): %.3e s", display_actual_dt);
         ImGui::Separator();
         const char* poissonSolverName = cfg.poisson_solver_type == static_cast<int>(cfd::PoissonType::Jacobi) ? "Jacobi" : "SOR";
         if (cfg.solverType == SolverChoice::VelocityPressure) {
-            ImGui::Text("Pressure Solver (%s):", poissonSolverName);
-            ImGui::Text(" Last Iterations: %u / %u", display_vp_monitor_info.pressureIterations, cfg.poisson_max_iter);
-            ImGui::Text(" Last Residual: %.3e (Tol: %.1e)", display_vp_monitor_info.pressureResidual, cfg.poisson_tol);
+            ImGui::Text("Решатель давление-скорость (%s):", poissonSolverName);
+            ImGui::Text(" Последняя итерация: %u / %u", display_vp_monitor_info.pressureIterations, cfg.poisson_max_iter);
+            ImGui::Text(" Последняя точность: %.3e (Tol: %.1e)", display_vp_monitor_info.pressureResidual, cfg.poisson_tol);
             if (display_vp_monitor_info.pressureIterations >= cfg.poisson_max_iter && 
                 display_vp_monitor_info.pressureResidual > cfg.poisson_tol && // Проверяем оба условия
                 simulationTime > 0) { // Не показываем в самом начале
                  ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
-                 ImGui::Text("PRESSURE SOLVER DID NOT CONVERGE!");
+                 ImGui::Text("Решение не сошлось!");
                  ImGui::PopStyleColor();
             }
         } else { 
-            ImGui::Text("Streamfunction Solver (%s):", poissonSolverName);
-            ImGui::Text(" Last Iterations: %u / %u", display_vs_monitor_info.streamfunctionIterations, cfg.poisson_max_iter);
-            ImGui::Text(" Last Residual: %.3e (Tol: %.1e)", display_vs_monitor_info.streamfunctionResidual, cfg.poisson_tol);
+            ImGui::Text("Решатель вихрь-функция тока (%s):", poissonSolverName);
+            ImGui::Text(" Последняя итерация: %u / %u", display_vs_monitor_info.streamfunctionIterations, cfg.poisson_max_iter);
+            ImGui::Text(" Последняя точность: %.3e (Tol: %.1e)", display_vs_monitor_info.streamfunctionResidual, cfg.poisson_tol);
              if (display_vs_monitor_info.streamfunctionIterations >= cfg.poisson_max_iter && 
                  display_vs_monitor_info.streamfunctionResidual > cfg.poisson_tol && // Проверяем оба условия
                  simulationTime > 0) { // Не показываем в самом начале
                  ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
-                 ImGui::Text("STREAMFUNCTION SOLVER DID NOT CONVERGE!");
+                 ImGui::Text("Решение не сошлось!");
                  ImGui::PopStyleColor();
             }
         }
@@ -590,41 +624,100 @@ int main() {
             }
             // Отображаем сообщение о завершении
             if (simulationTime >= cfg.sim_duration - 1e-3*cfg.sim_duration) { // Добавил небольшой допуск
-                ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Simulation Target Time Reached.");
+                ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Досигнуто время симуляции.");
             } else {
-                 ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.2f, 1.0f), "Simulation Thread Finished/Stopped.");
+                 ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.2f, 1.0f), "Расчет завершен.");
             }
             // Отображаем реальное время расчета
             if (wall_time_measured) {
-                 ImGui::Text("Total Real Calculation Time: %.3f seconds", total_real_calc_time_sec);
+                 ImGui::Text("Общее время расчета %.3f секунд", total_real_calc_time_sec);
+            }
+
+            ImGui::Dummy(ImVec2(0.0f, 10.0f)); // Отступ
+            ImGui::Separator();
+            ImGui::Text("Сохранение результатов:");
+            if (!results_saved_this_session) { 
+                if (ImGui::Button("Сохранить финальные результаты в CSV", ImVec2(-1, 30))) { 
+                    // Формируем базовое имя файла
+                    std::ostringstream time_ss_final;
+                    time_ss_final << std::fixed << std::setprecision(3) << simulationTime;
+                    std::string time_str_final = time_ss_final.str();
+                    std::replace(time_str_final.begin(), time_str_final.end(), '.', '_');
+                    
+                    std::string base_filename = "cfd_output_t" + time_str_final; 
+                    std::cout << "Saving final results to files with prefix: " << base_filename << "..." << std::endl;
+
+                    // Экспорт полей скоростей (они всегда есть)
+                    cfd::exportFieldToCSV(u_buffer, base_filename + "_U.csv");
+                    cfd::exportFieldToCSV(v_buffer, base_filename + "_V.csv");
+
+                    // Экспорт полей в зависимости от типа решателя
+                    if (cfg.solverType == SolverChoice::VelocityPressure) {
+                        cfd::exportFieldToCSV(scalar_buffer_for_vis, base_filename + "_Pressure.csv");
+                    } else { // VorticityStreamfunction
+                        cfd::exportFieldToCSV(scalar_buffer_for_vis, base_filename + "_Psi.csv");
+                        if (vs_solver_raw_ptr) { // Убедимся, что указатель валидный
+                            cfd::exportFieldToCSV(vs_solver_raw_ptr->vorticity(), base_filename + "_Omega.csv");
+                        }
+                    }
+
+                    // Экспорт полей турбулентности (если режим турбулентный)
+                    if (static_cast<cfd::TurbulenceModelType>(cfg.turbulenceChoice) != cfd::TurbulenceModelType::None && 
+                        solver_ptr && solver_ptr->getTurbulenceModel()) 
+                    {
+                        auto turb_model = solver_ptr->getTurbulenceModel();
+                        // Проверяем, что указатели на поля не нулевые
+                        if (turb_model->k()) cfd::exportFieldToCSV(*(turb_model->k()), base_filename + "_k.csv");
+                        if (turb_model->epsilon()) cfd::exportFieldToCSV(*(turb_model->epsilon()), base_filename + "_epsilon.csv");
+                        if (turb_model->nu_t()) cfd::exportFieldToCSV(*(turb_model->nu_t()), base_filename + "_nut.csv");
+                    }
+
+                    // Экспорт информации о сетке в отдельный файл
+                    std::ofstream mesh_file(base_filename + "_mesh_info.txt");
+                    if (mesh_file.is_open()) {
+                        mesh_file << "NX: " << geom.mesh().nx() << std::endl;
+                        mesh_file << "NY: " << geom.mesh().ny() << std::endl;
+                        mesh_file << "Lx: " << geom.mesh().Lx() << std::endl;
+                        mesh_file << "Ly: " << geom.mesh().Ly() << std::endl;
+                        mesh_file << "dx: " << geom.mesh().dx() << std::endl;
+                        mesh_file << "dy: " << geom.mesh().dy() << std::endl;
+                        mesh_file.close();
+                    }
+                    results_saved_this_session = true;
+                    std::cout << "Final results saved." << std::endl;
+                }
+            } else { 
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 1.0f, 0.2f, 1.0f)); // Зеленый цвет для подтверждения
+                ImGui::Text("Результаты успешно сохранены!");
+                ImGui::PopStyleColor();
             }
         } else { // Если поток еще работает
-            ImGui::Text("Simulation Running...");
+            ImGui::Text("Идет симуляция");
         }
         ImGui::End(); 
 
-        ImGui::Begin("Visualization Settings");
-        ImGui::Checkbox("Show Velocity Vectors", &vis.showVelocity_);
+        ImGui::Begin("Настройки визуализации");
+        ImGui::Checkbox("Показывать поле скоростей", &vis.showVelocity_);
 
         if (cfg.solverType == SolverChoice::VelocityPressure) {
-            ImGui::Checkbox("Show Pressure Field", &vis.showPressure_);
+            ImGui::Checkbox("Показывать поле давления", &vis.showPressure_);
         } else {
-            ImGui::Checkbox("Show Streamfunction lines", &vis.showStreamlines_);
+            ImGui::Checkbox("Показывать изолинии функции тока", &vis.showStreamlines_);
         }
         
         if (vis.showVelocity_) {
-            ImGui::SliderInt("Velocity Samples (Y)", &vis.maxSamplesY_, 5, 100);
-            ImGui::SliderFloat("Arrow Scale", &vis.arrowScale_, 0.001f, 0.2f, "%.4f");
-            ImGui::SliderFloat("Head Length Factor", &vis.headLengthFactor_, 0.001f, 0.2f, "%.4f");
-            ImGui::SliderFloat("Head Width Factor",  &vis.headWidthFactor_,  0.001f, 0.2f, "%.4f");
+            ImGui::SliderInt("Максимальное кол-во стрелок по Y", &vis.maxSamplesY_, 5, 100);
+            ImGui::SliderFloat("Масштаб стрелок", &vis.arrowScale_, 0.001f, 0.2f, "%.4f");
+            ImGui::SliderFloat("Множитель длины наконечника", &vis.headLengthFactor_, 0.001f, 0.2f, "%.4f");
+            ImGui::SliderFloat("Множитель ширины наконечника",  &vis.headWidthFactor_,  0.001f, 0.2f, "%.4f");
             ImGui::Separator();
         }
         if (cfg.solverType == SolverChoice::VelocityPressure && vis.showPressure_) {
-             ImGui::Text("Pressure Min: %.3f", vis.minScalarValue_); 
-             ImGui::Text("Pressure Max: %.3f", vis.maxScalarValue_);
+             ImGui::Text("Минимальное давление: %.3f", vis.minScalarValue_); 
+             ImGui::Text("Максимальное давление: %.3f", vis.maxScalarValue_);
         } else if (cfg.solverType == SolverChoice::VorticityStreamfunction && vis.showStreamlines_) {
-            ImGui::SliderInt("Num Streamline Levels", &vis.numStreamlineLevels_, 3, 50);
-            ImGui::SliderFloat("Streamline Thickness", &vis.streamlineThickness_, 0.5f, 5.0f);
+            ImGui::SliderInt("Количество изолиний уровня тока", &vis.numStreamlineLevels_, 3, 50);
+            ImGui::SliderFloat("Толщина изолиний уровня тока", &vis.streamlineThickness_, 0.5f, 5.0f);
         }
 
         ImGui::End();
@@ -653,11 +746,10 @@ int main() {
     if (worker.joinable()) { 
         worker.join(); 
 
-        if (!wall_time_measured && started) { // Убедимся, что started был true
+        if (!wall_time_measured && started) { 
             wall_time_end = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> wall_time_duration = wall_time_end - wall_time_start;
             total_real_calc_time_sec = wall_time_duration.count();
-            // wall_time_measured = true; // Уже не нужно для UI
             std::cout << "Final Real Calculation Time (measured after join): " << total_real_calc_time_sec << " seconds" << std::endl;
         }
     }

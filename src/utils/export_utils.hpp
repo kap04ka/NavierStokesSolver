@@ -40,7 +40,7 @@ void exportFieldToCSV(
         return;
     }
     
-    outfile << std::fixed << std::setprecision(6); // Устанавливаем точность
+    outfile << std::fixed << std::setprecision(6);
 
     for (std::size_t j = actual_j_start; j <= actual_j_end; ++j) {
         for (std::size_t i = actual_i_start; i <= actual_i_end; ++i) {
@@ -52,9 +52,6 @@ void exportFieldToCSV(
         outfile << "\n";
     }
     outfile.close();
-    // std::cout << "Exported field region [" << actual_i_start << "-" << actual_i_end 
-    //           << ", " << actual_j_start << "-" << actual_j_end 
-    //           << "] to " << filename << std::endl;
 }
 
 } // namespace cfd

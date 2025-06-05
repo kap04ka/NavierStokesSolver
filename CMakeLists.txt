@@ -103,3 +103,11 @@ if(ENABLE_CUDA)
         message(WARNING "ENABLE_CUDA is ON, but CUDA Toolkit not found. 'math' library built without CUDA specifics.")
     endif()
 endif()
+
+add_custom_command(
+    TARGET cfd_visualizer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/resources/ofont.ru_ISOCPEUR.ttf"  # <--- Откуда копировать
+        "$<TARGET_FILE_DIR:cfd_visualizer>"                       # <--- Куда копировать
+    COMMENT "Copying font to executable directory"
+)
