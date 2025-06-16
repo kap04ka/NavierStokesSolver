@@ -38,6 +38,7 @@ add_library(solvers
     src/solvers/vorticity_streamfunction/VorticityStreamfunctionSolver.cpp
     src/turbulence/base/TurbulenceModel.cpp
     src/turbulence/k_epsilon/KEpsilonModel.cpp
+    src/turbulence/spalart_allmaras/SpalartAllmarasModel.cpp
 )
 target_link_libraries(solvers PUBLIC core math)
 target_include_directories(solvers PUBLIC src)

@@ -221,7 +221,9 @@ int main() {
         ImGui::RadioButton("Ламинарный поток##flow", &cfg.turbulenceChoice, static_cast<int>(cfd::TurbulenceModelType::None)); 
         ImGui::SameLine();
         ImGui::RadioButton("k-epsilon##flow", &cfg.turbulenceChoice, static_cast<int>(cfd::TurbulenceModelType::KEpsilon));
-        if (cfg.turbulenceChoice != static_cast<int>(cfd::TurbulenceModelType::None)) {
+        ImGui::SameLine();
+        ImGui::RadioButton("Spalart-Allmaras##flow", &cfg.turbulenceChoice, static_cast<int>(cfd::TurbulenceModelType::SpalartAllmaras));
+        if (cfg.turbulenceChoice == static_cast<int>(cfd::TurbulenceModelType::KEpsilon)) {
             ImGui::Indent();
             ImGui::InputDouble("Турбулентность на входе", &cfg.inletTurbIntensity, 0.0,0.0, "%.3f");
             cfg.inletTurbIntensity = std::max(0.0, std::min(1.0, cfg.inletTurbIntensity));

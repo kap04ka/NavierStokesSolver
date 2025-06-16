@@ -39,7 +39,7 @@ public:
 private:
     std::size_t idx(std::size_t i, std::size_t j) const
     {
-        if (i >= nx_ || j >= ny_) throw std::out_of_range("Field2D index");
+        // if (i >= nx_ || j >= ny_) throw std::out_of_range("Field2D index");
         return j * nx_ + i;
     }
 

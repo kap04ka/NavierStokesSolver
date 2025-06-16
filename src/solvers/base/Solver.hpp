@@ -2,6 +2,7 @@
 #include "core/Geometry.hpp"
 #include "turbulence/base/TurbulenceModel.hpp"
 #include "turbulence/k_epsilon/KEpsilonModel.hpp"
+#include "turbulence/spalart_allmaras/SpalartAllmarasModel.hpp"
 #include <memory>
 #include <iostream>
 
@@ -31,6 +32,11 @@ public:
                         u_max_inlet_bc_,
                         inlet_turb_intensity,
                         inlet_length_scale_factor
+                    );
+                    break;
+                case TurbulenceModelType::SpalartAllmaras:
+                    turbulence_model_ = std::make_unique<SpalartAllmarasModel>(
+                        geom, rho, nu_molecular
                     );
                     break;
                 default:
